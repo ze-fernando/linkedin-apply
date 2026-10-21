@@ -1,15 +1,10 @@
 import re
-import unicodedata
 
 from autoapply.modules.config.models import Config
+from autoapply.shared.text import remove_accents
 
 NON_WORD_PATTERN = re.compile(r"[^\w\s]")
 WHITESPACE_PATTERN = re.compile(r"\s+")
-
-
-def remove_accents(text: str) -> str:
-    decomposed = unicodedata.normalize("NFKD", text)
-    return "".join(character for character in decomposed if not unicodedata.combining(character))
 
 
 def normalize_question(question: str) -> str:

@@ -234,8 +234,8 @@ O LinkedIn real e os LLMs reais **nunca** são chamados nos testes. Eles são va
 - [x] **T1 — Config do LLM.** Campos `llm` e `regras.analise_llm_max_vagas`, com validação e exibição no `validar`.
 - [x] **T2 — Banco.** `shared/database.py` e `jobs/store.py`.
 - [x] **T3 — URL, parsing e filtros.** Funções puras com fixtures.
-- [x] **T4 — Coletor + `coletar`.**** Playwright com rotas, ritmo, dump e tabela final. *Pronto:* testes passam e uma coleta real grava vagas.
-- [ ] **T5 — Pré-score e análise simplificada.**
+- [x] **T4 — Coletor + `coletar`.** Playwright com rotas, ritmo, dump e tabela final. *Pronto:* testes passam e uma coleta real grava vagas.
+- [x] **T5 — Pré-score e análise simplificada.**
 - [ ] **T6 — Provedores LLM.** claude CLI, opencode CLI, retry e fallback. *Pronto:* testes com executáveis falsos e uma análise real com `claude`.
 - [ ] **T7 — Avaliação.** Pipeline completo gravando `analyses`.
 - [ ] **T8 — Modo busca + `buscar` e `vagas`.** *Pronto:* o critério de pronto da seção 1 com a sessão real.

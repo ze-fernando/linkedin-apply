@@ -1,20 +1,9 @@
-import re
-
-from autoapply.modules.config.answers import remove_accents
 from autoapply.modules.config.models import Busca
 from autoapply.modules.jobs.models import JobCard
+from autoapply.shared.text import contains_term, normalize_text
 
 LEVEL_TITLE_TERMS = {"junior": ["júnior", "jr"], "pleno": ["pleno"]}
 SENIORITY_TERMS = ["sênior", "senior", "sr", "especialista", "lead", "tech lead", "principal", "staff"]
-
-
-def normalize_text(text: str) -> str:
-    return remove_accents(text).casefold()
-
-
-def contains_term(text: str, term: str) -> bool:
-    pattern = rf"(?<!\w){re.escape(normalize_text(term))}(?!\w)"
-    return re.search(pattern, normalize_text(text)) is not None
 
 
 def is_seniority_term(term: str) -> bool:

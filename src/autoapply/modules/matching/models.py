@@ -22,3 +22,11 @@ class JobAnalysis:
     analyzer: Analyzer
     model: str | None
     analyzed_at: datetime
+
+
+@dataclass(frozen=True)
+class ResumeMatch:
+    resume_name: str
+    pre_score: int
+    job_terms: list[str]
+    missing_terms: list[str]
