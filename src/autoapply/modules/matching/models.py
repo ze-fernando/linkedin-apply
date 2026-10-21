@@ -59,3 +59,9 @@ class ProviderAnalysis:
 class ProviderRun:
     providers: list[ProvedorLlm]
     consecutive_failures: dict[ProvedorLlm, int] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class EvaluationSummary:
+    llm: int
+    keywords: int

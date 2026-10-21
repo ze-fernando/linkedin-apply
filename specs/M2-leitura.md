@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS analyses (
 | Provedor | Disponível quando | Chamada |
 |---|---|---|
 | `claude` | `claude` no PATH | `claude -p --output-format json --json-schema <schema> --model <llm.claude.modelo> --tools "" --no-session-persistence`, prompt no stdin; lê `structured_output` |
-| `opencode` | `opencode` no PATH | `opencode run --standalone -m <llm.opencode.modelo> --format json "<prompt>"`, com o prompt pedindo só JSON; extrai e valida o JSON da resposta. Não existe `--json-schema`: a validação é feita pelo nosso código. **O formato exato do `--format json` ainda precisa ser capturado** |
+| `opencode` | `opencode` no PATH | `opencode run --standalone -m <llm.opencode.modelo> "<prompt>"`, com o prompt pedindo só JSON e trazendo o JSON Schema; lê a saída em texto e extrai o primeiro objeto JSON, validado pelo nosso código (não existe `--json-schema`). O `--format json` não foi usado porque não devolveu saída no teste manual |
 | `palavras_chave` | sempre | análise simplificada (7.4) |
 
 - A ordem vem de `llm.provedores`. A disponibilidade é verificada uma vez por execução, e o terminal mostra qual provedor foi usado.
@@ -237,7 +237,7 @@ O LinkedIn real e os LLMs reais **nunca** são chamados nos testes. Eles são va
 - [x] **T4 — Coletor + `coletar`.** Playwright com rotas, ritmo, dump e tabela final. *Pronto:* testes passam e uma coleta real grava vagas.
 - [x] **T5 — Pré-score e análise simplificada.**
 - [x] **T6 — Provedores LLM.** claude CLI, opencode CLI, retry e fallback. *Pronto:* testes com executáveis falsos e uma análise real com `claude`.
-- [ ] **T7 — Avaliação.** Pipeline completo gravando `analyses`.
+- [x] **T7 — Avaliação.** Pipeline completo gravando `analyses`.
 - [ ] **T8 — Modo busca + `buscar` e `vagas`.** *Pronto:* o critério de pronto da seção 1 com a sessão real.
 - [ ] **T9 — Fechamento.** README e PRD.
 
