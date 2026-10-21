@@ -1,9 +1,13 @@
+import dataclasses
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 
 import docx
 import pytest
 from pypdf import PdfWriter
+
+from autoapply.modules.jobs.models import Job, JobStatus
 
 
 @pytest.fixture
@@ -176,5 +180,27 @@ def build_blank_pdf(tmp_path: Path) -> Callable[[str], Path]:
         with path.open("wb") as output:
             writer.write(output)
         return path
+
+    return build
+
+
+@pytest.fixture
+def build_job() -> Callable[..., Job]:
+    def build(**overrides: object) -> Job:
+        job = Job(
+            id="4481248162",
+            title="Desenvolvedor .NET Pleno",
+            company="Empresa Teste",
+            location="Brasil (Remoto)",
+            workplace="Remoto · Tempo integral",
+            posted="há 1 dia",
+            description="Vaga para C# e ASP.NET Core.",
+            url="https://www.linkedin.com/jobs/view/4481248162/",
+            search_term="Desenvolvedor .NET",
+            status=JobStatus.COLLECTED,
+            discard_reason=None,
+            collected_at=datetime(2026, 10, 21, 15, 30, 0),
+        )
+        return dataclasses.replace(job, **overrides)
 
     return build

@@ -229,7 +229,7 @@ O LinkedIn real e os LLMs reais **nunca** são chamados nos testes. Eles são va
 ## 11. Tarefas
 
 - [x] **T1 — Config do LLM.** Campos `llm` e `regras.analise_llm_max_vagas`, com validação e exibição no `validar`.
-- [ ] **T2 — Banco.** `shared/database.py` e `jobs/store.py`.
+- [x] **T2 — Banco.** `shared/database.py` e `jobs/store.py`.
 - [ ] **T3 — URL, parsing e filtros.** Funções puras com fixtures.
 - [ ] **T4 — Coletor + `coletar`.** Playwright com rotas, ritmo, dump e tabela final. *Pronto:* testes passam e uma coleta real grava vagas.
 - [ ] **T5 — Pré-score e análise simplificada.**
