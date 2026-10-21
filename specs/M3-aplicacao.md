@@ -50,6 +50,7 @@ Explorado em 2026-10-21 em 7 vagas reais do banco, sem nunca clicar em "Enviar":
   O rótulo vem do `label[for=<id>]` ou do `legend`. A legenda do rádio termina com "Obrigatório", que deve ser removido. Não apareceram textarea, checkbox de pergunta nem autocompletar (cidade); eles são tratados na seção 7.4.
 - **Erros de validação:** `.artdeco-inline-feedback--error` dentro do modal, por exemplo "Enter a whole number between 0 and 99".
 - **Pré-preenchimento:** o LinkedIn reaproveita respostas suas de candidaturas anteriores. Muitos campos vêm preenchidos (inclusive rádios e números) e outros vêm vazios.
+- **Os valores atuais não estão no HTML:** `value`, `checked` e a opção selecionada só existem como propriedades do DOM. Antes de ler uma etapa, um JS copia esses valores para `data-autoapply-value` (texto e opção selecionada) e `data-autoapply-checked` (rádio). O parsing é uma função pura sobre esse HTML.
 - **Currículo:** a etapa lista os currículos já enviados ao LinkedIn (2 visíveis e "+3 currículos") e tem `input[type=file][name=file]` para upload.
 - **Revisão:** `#follow-company-checkbox` ("Siga a empresa…") vem marcado.
 - **Ainda não capturado** (será feito na T4 com dump, sem enviar nada além da candidatura autorizada): a tela depois de enviar e o painel de uma vaga já aplicada.
@@ -224,10 +225,10 @@ O LinkedIn real **nunca** é chamado nos testes, e a trava de rede do M1 continu
 ## 10. Tarefas
 
 - [x] **T1 — Banco e pastas.** Status novos, tabelas novas, `job_folders` e `respostas.md` no `buscar`.
-- [ ] **T2 — Parsing do formulário.** Fixtures e `form_parsing.py`.
+- [x] **T2 — Parsing do formulário.** Fixtures e `form_parsing.py`.
 - [ ] **T3 — Respostas.** `job_answers.py`, `answer_rules.py` e `answering.py`.
 - [ ] **T4 — Motor do Easy Apply.** Modal falso, preenchimento, upload, simulação, descarte e dump. *Pronto:* testes passam e `--simular` percorre 3 vagas reais até a revisão.
-- [ ] **T5 — `aplicar` e runner.** Limite, ritmo, linhas e resumo. *Pronto:* uma candidatura real autorizada por você; a tela de sucesso e a vaga já aplicada são capturadas e viram fixture.
+- [ ] **T5 — `aplicar` e runner.** Limite, ritmo, linhas e resumo. Migração: registra em `job_folders` as pastas criadas no M2 (ID lido do link no `vaga.md`). *Pronto:* uma candidatura real autorizada por você; a tela de sucesso e a vaga já aplicada são capturadas e viram fixture.
 - [ ] **T6 — `rodar`.** Seleção por score, ignoradas por score mínimo.
 - [ ] **T7 — `pendentes`.**
 - [ ] **T8 — Fechamento.** README e PRD.
