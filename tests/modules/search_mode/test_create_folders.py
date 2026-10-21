@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from autoapply.modules.applying.store import find_job_folder
 from autoapply.modules.config.loader import parse_config_data
 from autoapply.modules.config.models import Config
 from autoapply.modules.jobs.models import Job, JobStatus
@@ -83,3 +84,24 @@ def test_create_job_folders_writes_top_scores_and_never_repeats_them(
     assert [folder.name for folder in second] == ["2026-10-21-empresa-media-desenvolvedor-net-pleno"]
     assert {job.id for job in list_jobs(connection, JobStatus.AWAITING_RESUME)} == {"alta", "boa", "media"}
     assert sorted(path.name for path in vagas_dir.iterdir()) == sorted(folder.name for folder in first + second)
+
+
+def test_create_job_folders_records_folder_and_writes_answers_template(
+    connection: sqlite3.Connection, config: Config, store_evaluated_job: Callable[[str, int], None], tmp_path: Path
+) -> None:
+    store_evaluated_job("alta", 90)
+
+    [folder] = create_job_folders(connection, config, tmp_path / "vagas", TODAY)
+
+    assert find_job_folder(connection, "alta") == folder
+    assert find_job_folder(connection, "outra") is None
+    assert (folder / "respostas.md").read_text(encoding="utf-8") == (
+        "# Respostas desta vaga\n"
+        "\n"
+        "Respostas usadas só nesta vaga, com prioridade sobre o `config.md`.\n"
+        "Linhas especiais: `pretensão salarial` (valor da pretensão) e\n"
+        "`mensagem` (texto livre no lugar da resposta genérica).\n"
+        "\n"
+        "| Pergunta | Resposta |\n"
+        "| -------- | -------- |\n"
+    )

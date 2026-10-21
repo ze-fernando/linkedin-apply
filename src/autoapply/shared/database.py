@@ -30,6 +30,30 @@ CREATE TABLE IF NOT EXISTS analyses (
   model TEXT,
   analyzed_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS job_folders (
+  job_id TEXT PRIMARY KEY REFERENCES jobs(id),
+  folder TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS application_attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL REFERENCES jobs(id),
+  mode TEXT NOT NULL,
+  outcome TEXT NOT NULL,
+  reason TEXT,
+  resume_file TEXT,
+  attempted_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS pending_questions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  job_id TEXT NOT NULL REFERENCES jobs(id),
+  question TEXT NOT NULL,
+  field_kind TEXT NOT NULL,
+  options TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
 """
 
 

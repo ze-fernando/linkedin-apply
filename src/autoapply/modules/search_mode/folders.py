@@ -3,6 +3,7 @@ import sqlite3
 from datetime import date
 from pathlib import Path
 
+from autoapply.modules.applying.store import save_job_folder
 from autoapply.modules.config.models import Config
 from autoapply.modules.jobs.models import Job, JobStatus
 from autoapply.modules.jobs.store import update_job_status
@@ -15,6 +16,16 @@ SIMPLIFIED_WARNING = "> **Aviso:** análise simplificada por palavras-chave (sem
 LOW_SCORE_WARNING = "> **Aviso:** score {score} abaixo do mínimo configurado ({minimum})."
 ANALYZER_LABELS = {Analyzer.KEYWORDS: "palavras-chave"}
 SAVE_RESUME_HINT = "Salve o currículo adaptado nesta pasta como `cv.docx` ou `cv.pdf`."
+ANSWERS_TEMPLATE = (
+    "# Respostas desta vaga\n"
+    "\n"
+    "Respostas usadas só nesta vaga, com prioridade sobre o `config.md`.\n"
+    "Linhas especiais: `pretensão salarial` (valor da pretensão) e\n"
+    "`mensagem` (texto livre no lugar da resposta genérica).\n"
+    "\n"
+    "| Pergunta | Resposta |\n"
+    "| -------- | -------- |\n"
+)
 
 
 def slugify(text: str) -> str:
@@ -94,6 +105,8 @@ def create_job_folders(connection: sqlite3.Connection, config: Config, vagas_dir
             job, analysis, format_resume_file(config, analysis.resume_name), config.regras.score_minimo
         )
         (folder / "vaga.md").write_text(markdown, encoding="utf-8")
+        (folder / "respostas.md").write_text(ANSWERS_TEMPLATE, encoding="utf-8")
+        save_job_folder(connection, job.id, folder)
         update_job_status(connection, job.id, JobStatus.AWAITING_RESUME)
         folders.append(folder)
     return folders

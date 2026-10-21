@@ -223,7 +223,7 @@ O LinkedIn real **nunca** é chamado nos testes, e a trava de rede do M1 continu
 
 ## 10. Tarefas
 
-- [ ] **T1 — Banco e pastas.** Status novos, tabelas novas, `job_folders` e `respostas.md` no `buscar`.
+- [x] **T1 — Banco e pastas.** Status novos, tabelas novas, `job_folders` e `respostas.md` no `buscar`.
 - [ ] **T2 — Parsing do formulário.** Fixtures e `form_parsing.py`.
 - [ ] **T3 — Respostas.** `job_answers.py`, `answer_rules.py` e `answering.py`.
 - [ ] **T4 — Motor do Easy Apply.** Modal falso, preenchimento, upload, simulação, descarte e dump. *Pronto:* testes passam e `--simular` percorre 3 vagas reais até a revisão.
@@ -250,7 +250,6 @@ Confirmadas em 2026-10-21:
 10. O limite diário soma `aplicar` e `rodar`; o `--simular` não conta. Espera de 1 a 3 min entre candidaturas.
 11. Pretensão: nível pelo título (ou `padrao_nivel`), PJ quando a pergunta cita PJ, senão CLT; outra moeda vira pendente.
 12. Campo de tipo desconhecido: a vaga vira `falhou` com dump.
-
 13. Texto curto obrigatório sem resposta vira pendente; só textarea recebe a resposta genérica.
 14. Sem confirmação depois do Enviar, a vaga fica `falhou` para conferência manual, nunca `aplicada`.
 15. O `--simular` não grava nada no banco (nem status nem pendentes); só mostra o resultado no terminal.

@@ -8,6 +8,9 @@ class JobStatus(StrEnum):
     IGNORED = "ignorada"
     EVALUATED = "avaliada"
     AWAITING_RESUME = "aguardando_cv"
+    APPLIED = "aplicada"
+    FAILED = "falhou"
+    PENDING_QUESTION = "pendente_pergunta"
 
 
 @dataclass(frozen=True)
