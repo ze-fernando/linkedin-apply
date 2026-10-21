@@ -233,7 +233,7 @@ autoapply --verbose ...     # nível DEBUG no terminal
 
 - [x] **T1 — Setup.** `uv init`, `pyproject.toml` com as dependências e o entry point `autoapply`, `.gitignore` (`config.md`, `cv_base/`, `cv.docx`, `data/`, `logs/`, `debug/`, `.venv/`), `git init` e commit inicial (`:tada: init: Commit inicial`). Verificar se Playwright, Pydantic e python-docx têm wheels para a versão de Python escolhida.
   *Pronto:* `uv run autoapply --help` funciona.
-- [ ] **T2 — `shared/console.py` + logging.** Console Rich, `RichHandler`, arquivo JSONL, filtro de dados sensíveis.
+- [x] **T2 — `shared/console.py` + logging.** Console Rich, `RichHandler`, arquivo JSONL, filtro de dados sensíveis.
   *Pronto:* teste confirma que e-mail e telefone saem mascarados no arquivo.
 - [ ] **T3 — Modelos de config.** Pydantic com todas as validações da seção 4.2.
   *Pronto:* testes de modelo passam.
