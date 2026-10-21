@@ -147,7 +147,9 @@ def parse_field(container: LexborNode) -> FormField | None:
     element = container.css_first("input")
     if element is None:
         return None
-    return parse_text_input(container, element) if is_plain_text_input(element) else parse_unknown_input(container, element)
+    if is_plain_text_input(element):
+        return parse_text_input(container, element)
+    return parse_unknown_input(container, element)
 
 
 def find_action(tree: LexborHTMLParser) -> StepAction | None:

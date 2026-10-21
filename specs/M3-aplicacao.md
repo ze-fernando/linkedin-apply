@@ -156,7 +156,7 @@ Para cada campo, a primeira fonte que responder vence. A fonte vai para o log, e
 ### 7.3 Pretensão salarial
 
 - Reconhece "pretensão salarial", "expectativa salarial", "salary expectation", "pretensión salarial", "pretendido" e variações.
-- **Nível:** sai do título da vaga (os termos de nível do M2: júnior/jr, pleno); sem nível no título, usa `pretensao.padrao_nivel`.
+- **Nível:** sai do título da vaga (os termos de nível do M2: júnior/jr, pleno); se o título cita os dois, usa pleno; sem nível no título, usa `pretensao.padrao_nivel`.
 - **Contrato:** PJ quando a pergunta cita PJ; senão CLT. O valor é o `formulario` da faixa.
 - Pergunta com outra moeda (USD, dólar, dollar, euro, EUR) → pendente.
 
@@ -166,7 +166,7 @@ Para cada campo, a primeira fonte que responder vence. A fonte vai para o log, e
 - Sim/não entre idiomas: "sim", "yes", "sí"/"si" e "não", "no".
 - Nenhuma opção casa → pendente, guardando as opções do formulário.
 - **Campo numérico** com resposta que não é número → pendente.
-- **Tipo desconhecido** (autocompletar, checkbox de pergunta, upload de outro documento) → a vaga vira `falhou` com o motivo e o dump em `debug/`, e o rascunho é descartado.
+- **Tipo desconhecido** (autocompletar, checkbox de pergunta, upload de outro documento): se obrigatório, a vaga vira `falhou` com o motivo e o dump em `debug/`, e o rascunho é descartado; se opcional, fica em branco.
 
 ## 8. Comandos
 
@@ -226,7 +226,7 @@ O LinkedIn real **nunca** é chamado nos testes, e a trava de rede do M1 continu
 
 - [x] **T1 — Banco e pastas.** Status novos, tabelas novas, `job_folders` e `respostas.md` no `buscar`.
 - [x] **T2 — Parsing do formulário.** Fixtures e `form_parsing.py`.
-- [ ] **T3 — Respostas.** `job_answers.py`, `answer_rules.py` e `answering.py`.
+- [x] **T3 — Respostas.** `job_answers.py`, `answer_rules.py` e `answering.py`.
 - [ ] **T4 — Motor do Easy Apply.** Modal falso, preenchimento, upload, simulação, descarte e dump. *Pronto:* testes passam e `--simular` percorre 3 vagas reais até a revisão.
 - [ ] **T5 — `aplicar` e runner.** Limite, ritmo, linhas e resumo. Migração: registra em `job_folders` as pastas criadas no M2 (ID lido do link no `vaga.md`). *Pronto:* uma candidatura real autorizada por você; a tela de sucesso e a vaga já aplicada são capturadas e viram fixture.
 - [ ] **T6 — `rodar`.** Seleção por score, ignoradas por score mínimo.
@@ -250,7 +250,7 @@ Confirmadas em 2026-10-21:
 9. Anos de experiência com tecnologia fora de `experiencia_anos` vira pendente.
 10. O limite diário soma `aplicar` e `rodar`; o `--simular` não conta. Espera de 1 a 3 min entre candidaturas.
 11. Pretensão: nível pelo título (ou `padrao_nivel`), PJ quando a pergunta cita PJ, senão CLT; outra moeda vira pendente.
-12. Campo de tipo desconhecido: a vaga vira `falhou` com dump.
+12. Campo de tipo desconhecido: se for obrigatório, a vaga vira `falhou` com dump; se for opcional, fica em branco e vai para o log.
 13. Texto curto obrigatório sem resposta vira pendente; só textarea recebe a resposta genérica.
 14. Sem confirmação depois do Enviar, a vaga fica `falhou` para conferência manual, nunca `aplicada`.
 15. O `--simular` não grava nada no banco (nem status nem pendentes); só mostra o resultado no terminal.

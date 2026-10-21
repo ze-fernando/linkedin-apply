@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
+from autoapply.modules.config.models import Config
+
 
 class ApplyMode(StrEnum):
     SEARCH = "busca"
@@ -23,6 +25,23 @@ class StepAction(StrEnum):
     NEXT = "avancar"
     REVIEW = "revisar"
     SUBMIT = "enviar"
+
+
+class DecisionAction(StrEnum):
+    FILL = "preencher"
+    KEEP = "manter"
+    PENDING = "pendente"
+    SKIP = "pular"
+    FAIL = "falhar"
+
+
+class AnswerSource(StrEnum):
+    PROFILE = "perfil"
+    JOB = "respostas.md"
+    CONFIG = "config.md"
+    RULE = "regra"
+    LINKEDIN = "LinkedIn"
+    GENERIC = "resposta genérica"
 
 
 class AttemptOutcome(StrEnum):
@@ -68,3 +87,24 @@ class FormStep:
     has_follow_company: bool
     action: StepAction | None
     errors: list[str]
+
+
+@dataclass(frozen=True)
+class SalaryQuestion:
+    is_pj: bool
+    foreign_currency: bool
+
+
+@dataclass(frozen=True)
+class FieldDecision:
+    action: DecisionAction
+    value: str | None
+    source: AnswerSource | None
+    reason: str | None
+
+
+@dataclass(frozen=True)
+class AnswerContext:
+    config: Config
+    job_answers: dict[str, str]
+    job_title: str
