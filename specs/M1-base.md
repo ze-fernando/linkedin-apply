@@ -239,7 +239,7 @@ autoapply --verbose ...     # nível DEBUG no terminal
   *Pronto:* testes de modelo passam.
 - [x] **T4 — Loader do `config.md`.** Frontmatter, tabela de respostas, resposta genérica e mapeamento de erros para linha.
   *Pronto:* testes de erro verificam linha e campo.
-- [ ] **T5 — Currículos.** Módulo `resumes` com docx/pdf e detecção de texto insuficiente.
+- [x] **T5 — Currículos.** Módulo `resumes` com docx/pdf e detecção de texto insuficiente.
   *Pronto:* testes passam e os 3 CVs reais de `cv_base/` são lidos.
 - [ ] **T6 — Comando `validar`.** Painel, tabelas e códigos de saída.
   *Pronto:* `uv run autoapply validar` com o `config.md` real mostra tudo OK.
