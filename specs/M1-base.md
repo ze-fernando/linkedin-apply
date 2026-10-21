@@ -235,7 +235,7 @@ autoapply --verbose ...     # nível DEBUG no terminal
   *Pronto:* `uv run autoapply --help` funciona.
 - [x] **T2 — `shared/console.py` + logging.** Console Rich, `RichHandler`, arquivo JSONL, filtro de dados sensíveis.
   *Pronto:* teste confirma que e-mail e telefone saem mascarados no arquivo.
-- [ ] **T3 — Modelos de config.** Pydantic com todas as validações da seção 4.2.
+- [x] **T3 — Modelos de config.** Pydantic com todas as validações da seção 4.2.
   *Pronto:* testes de modelo passam.
 - [ ] **T4 — Loader do `config.md`.** Frontmatter, tabela de respostas, resposta genérica e mapeamento de erros para linha.
   *Pronto:* testes de erro verificam linha e campo.
