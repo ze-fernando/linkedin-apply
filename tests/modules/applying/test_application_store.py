@@ -1,9 +1,5 @@
 import sqlite3
-from collections.abc import Iterator
 from datetime import date, datetime
-from pathlib import Path
-
-import pytest
 
 from autoapply.modules.applying.models import ApplicationAttempt, ApplyMode, AttemptOutcome, FieldKind, PendingQuestion
 from autoapply.modules.applying.store import (
@@ -13,14 +9,6 @@ from autoapply.modules.applying.store import (
     record_attempt,
     replace_pending_questions,
 )
-from autoapply.shared.database import open_database
-
-
-@pytest.fixture
-def connection(tmp_path: Path) -> Iterator[sqlite3.Connection]:
-    connection = open_database(tmp_path / "autoapply.db")
-    yield connection
-    connection.close()
 
 
 def build_attempt(job_id: str, outcome: AttemptOutcome, attempted_at: datetime) -> ApplicationAttempt:

@@ -15,6 +15,11 @@ def find_job_folder(connection: sqlite3.Connection, job_id: str) -> Path | None:
     return None if row is None else Path(row[0])
 
 
+def list_job_folders(connection: sqlite3.Connection) -> dict[str, Path]:
+    rows = connection.execute("SELECT job_id, folder FROM job_folders").fetchall()
+    return {job_id: Path(folder) for job_id, folder in rows}
+
+
 def record_attempt(connection: sqlite3.Connection, attempt: ApplicationAttempt) -> None:
     connection.execute(
         "INSERT INTO application_attempts (job_id, mode, outcome, reason, resume_file, attempted_at) "
@@ -40,8 +45,8 @@ def count_applied_on(connection: sqlite3.Connection, day: date) -> int:
 
 def has_applied(connection: sqlite3.Connection, job_id: str) -> bool:
     row = connection.execute(
-        "SELECT 1 FROM application_attempts WHERE job_id = ? AND outcome = ? LIMIT 1",
-        [job_id, AttemptOutcome.APPLIED],
+        "SELECT 1 FROM application_attempts WHERE job_id = ? AND outcome IN (?, ?) LIMIT 1",
+        [job_id, AttemptOutcome.APPLIED, AttemptOutcome.ALREADY_APPLIED],
     ).fetchone()
     return row is not None
 

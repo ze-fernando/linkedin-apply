@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from pathlib import Path
 
 from autoapply.modules.config.models import Config
+from autoapply.modules.jobs.models import Job
 
 
 class ApplyMode(StrEnum):
@@ -46,6 +48,7 @@ class AnswerSource(StrEnum):
 
 class AttemptOutcome(StrEnum):
     APPLIED = "aplicada"
+    ALREADY_APPLIED = "ja_aplicada"
     PENDING = "pendente"
     FAILED = "falhou"
 
@@ -112,6 +115,7 @@ class AnswerContext:
 
 class ApplicationOutcome(StrEnum):
     APPLIED = "aplicada"
+    ALREADY_APPLIED = "ja_aplicada"
     PENDING = "pendente"
     FAILED = "falhou"
     SIMULATED = "simulada"
@@ -122,3 +126,37 @@ class ApplicationResult:
     outcome: ApplicationOutcome
     reason: str | None
     pending_fields: list[FormField]
+
+
+@dataclass(frozen=True)
+class FolderResume:
+    path: Path | None
+    problem: str | None
+
+
+@dataclass(frozen=True)
+class ApplicationCandidate:
+    job: Job
+    resume_file: Path
+    job_answers: dict[str, str]
+    score: int | None
+
+
+@dataclass(frozen=True)
+class RunEntry:
+    candidate: ApplicationCandidate
+    result: ApplicationResult
+
+
+@dataclass(frozen=True)
+class RunSummary:
+    entries: list[RunEntry]
+    limit_reached: bool
+    not_attempted: int
+
+
+@dataclass(frozen=True)
+class FolderJob:
+    job: Job
+    folder: Path
+    score: int | None

@@ -32,6 +32,8 @@ SEARCH_JOB_URL = "https://www.linkedin.com/jobs/search/?currentJobId={job_id}"
 PANEL_READY_SELECTOR = '.job-details-jobs-unified-top-card__job-title a[href*="/jobs/view/{job_id}/"]'
 APPLY_BUTTON_SELECTOR = "button.jobs-apply-button"
 EASY_APPLY_LABEL = "candidatura simplificada"
+APPLIED_FEEDBACK_SELECTOR = ".jobs-s-apply .artdeco-inline-feedback--success"
+APPLIED_FEEDBACK_PATTERN = re.compile(r"candidatura enviada|candidatou-se|applied|solicitud enviada", re.IGNORECASE)
 MODAL_SELECTOR = ".jobs-easy-apply-modal"
 CLOSE_SELECTOR = f"{MODAL_SELECTOR} button[data-test-modal-close-btn]"
 DISCARD_SELECTOR = 'button[data-control-name="discard_application_confirm_btn"]'
@@ -150,16 +152,23 @@ def advance(page: Page, action: StepAction, wait: Callable[[], None], timeout_ms
     page.wait_for_function(MODAL_CHANGED_SCRIPT, arg=[MODAL_SELECTOR, before], timeout=timeout_ms)
 
 
-def open_application(page: Page, job: Job, timeout_ms: int) -> bool:
+def is_already_applied(page: Page) -> bool:
+    feedback = page.locator(APPLIED_FEEDBACK_SELECTOR).first
+    return feedback.count() > 0 and APPLIED_FEEDBACK_PATTERN.search(feedback.inner_text()) is not None
+
+
+def open_application(page: Page, job: Job, timeout_ms: int) -> ApplicationResult | None:
     page.goto(SEARCH_JOB_URL.format(job_id=job.id), wait_until="domcontentloaded")
     ensure_page_is_usable(page)
     page.wait_for_selector(PANEL_READY_SELECTOR.format(job_id=job.id), timeout=timeout_ms)
+    if is_already_applied(page):
+        return result(ApplicationOutcome.ALREADY_APPLIED, "o LinkedIn já mostra candidatura enviada")
     apply_button = page.locator(APPLY_BUTTON_SELECTOR).first
     if apply_button.count() == 0 or EASY_APPLY_LABEL not in apply_button.inner_text().casefold():
-        return False
+        return result(ApplicationOutcome.FAILED, "sem botão Candidatura simplificada")
     apply_button.click(timeout=timeout_ms)
     page.wait_for_selector(MODAL_SELECTOR, timeout=timeout_ms)
-    return True
+    return None
 
 
 def apply_to_job(
@@ -172,8 +181,9 @@ def apply_to_job(
     debug_dir: Path,
     timeout_ms: int = 15000,
 ) -> ApplicationResult:
-    if not open_application(page, job, timeout_ms):
-        return result(ApplicationOutcome.FAILED, "sem botão Candidatura simplificada")
+    blocked = open_application(page, job, timeout_ms)
+    if blocked is not None:
+        return blocked
     for _ in range(MAX_STEPS):
         step = read_current_step(page)
         if step.errors:

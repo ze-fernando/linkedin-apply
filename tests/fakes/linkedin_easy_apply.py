@@ -176,6 +176,7 @@ class FakeApplication:
     steps: list[FakeStep] = field(default_factory=list)
     easy_apply: bool = True
     shows_success: bool = True
+    already_applied: bool = False
 
 
 def render_step(step: FakeStep) -> str:
@@ -183,14 +184,24 @@ def render_step(step: FakeStep) -> str:
       <footer role="presentation">{step.button}</footer></template>"""
 
 
-def build_apply_page(application: FakeApplication) -> str:
+APPLIED_FEEDBACK = """<div class="jobs-s-apply"><div class="artdeco-inline-feedback artdeco-inline-feedback--success">
+  <span class="artdeco-inline-feedback__message">Candidatura enviada há 2 dias</span></div></div>"""
+
+
+def build_apply_control(application: FakeApplication) -> str:
+    if application.already_applied:
+        return APPLIED_FEEDBACK
     apply_label = "Candidatura simplificada" if application.easy_apply else "Candidatar-se"
+    return f'<button class="jobs-apply-button" type="button"><span>{apply_label}</span></button>'
+
+
+def build_apply_page(application: FakeApplication) -> str:
     return f"""<!doctype html>
     <html><body data-success="{str(application.shows_success).lower()}">
       <div class="job-details-jobs-unified-top-card__job-title">
         <h1><a href="/jobs/view/{application.job_id}/">{escape(application.title)}</a></h1>
       </div>
-      <button class="jobs-apply-button" type="button"><span>{apply_label}</span></button>
+      {build_apply_control(application)}
       <div id="modal-root"></div>
       {"".join(render_step(step) for step in application.steps)}
       <script>{APPLY_PAGE_SCRIPT}</script>

@@ -196,6 +196,18 @@ def test_apply_to_job_without_easy_apply_button_fails_without_opening(
     assert log["opened"] is False
 
 
+def test_apply_to_job_already_applied_on_linkedin_returns_already_applied_without_opening(
+    run_application: Callable[..., tuple[ApplicationResult, dict[str, object], Page]],
+) -> None:
+    result, log, _ = run_application(FakeApplication(job_id=JOB_ID, already_applied=True))
+
+    assert (result.outcome, result.reason) == (
+        ApplicationOutcome.ALREADY_APPLIED,
+        "o LinkedIn já mostra candidatura enviada",
+    )
+    assert log["opened"] is False
+
+
 def test_apply_to_job_without_success_confirmation_fails_with_dump_and_keeps_modal(
     run_application: Callable[..., tuple[ApplicationResult, dict[str, object], Page]], tmp_path: Path
 ) -> None:
