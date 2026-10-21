@@ -9,6 +9,16 @@ from pypdf import PdfWriter
 
 from autoapply.modules.jobs.models import Job, JobStatus
 
+PAGES_DIR = Path(__file__).parent / "fixtures" / "pages"
+
+
+@pytest.fixture
+def read_page() -> Callable[[str], str]:
+    def read(name: str) -> str:
+        return (PAGES_DIR / name).read_text(encoding="utf-8")
+
+    return read
+
 
 @pytest.fixture
 def base_dir(tmp_path: Path) -> Path:

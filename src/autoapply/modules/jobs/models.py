@@ -24,3 +24,22 @@ class Job:
     status: JobStatus
     discard_reason: str | None
     collected_at: datetime
+
+
+@dataclass(frozen=True)
+class JobCard:
+    id: str
+    title: str
+    company: str
+    location: str
+
+
+@dataclass(frozen=True)
+class JobDetail:
+    title: str
+    company: str
+    location: str
+    posted: str | None
+    workplace: str | None
+    description: str
+    has_easy_apply: bool

@@ -7,16 +7,6 @@ from playwright.sync_api import BrowserContext, Request, Route
 
 from autoapply.modules.session.browser import open_browser_context
 
-PAGES_DIR = Path(__file__).parents[2] / "fixtures" / "pages"
-
-
-@pytest.fixture
-def read_page() -> Callable[[str], str]:
-    def read(name: str) -> str:
-        return (PAGES_DIR / name).read_text(encoding="utf-8")
-
-    return read
-
 
 @pytest.fixture
 def browser_context(tmp_path: Path) -> Iterator[BrowserContext]:

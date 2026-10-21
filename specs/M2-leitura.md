@@ -19,7 +19,7 @@
 Validado em 2026-10-21, dentro do ai-jail:
 
 - **Claude Code CLI** 2.1.306 em `~/.local/bin/claude`. A chamada `claude -p --output-format json --json-schema <schema> --model <modelo> --tools "" --no-session-persistence` com o prompt no stdin devolve um JSON com `structured_output` já validado pelo schema e `is_error`. Leva de 8 a 20 s por chamada.
-- **OpenCode** está instalado fora da distrobox e **não é visível dentro do ai-jail**: `distrobox-host-exec` não roda dentro da jail e a home do host não está montada. Para usar, é preciso mapear o binário e a configuração/autenticação dele para dentro da jail, como foi feito com o `uv`. A documentação (`opencode.ai`) também está bloqueada pelo proxy, então as flags do `opencode run` serão confirmadas depois do mapeamento (seção 7.3).
+- **OpenCode** 2.0.31 (binário em `/home/zeco/.opencode/bin`, link em `~/.local/bin/opencode`), mapeado no ai-jail global só para `[commands.opencode]`, com `opencode.ai` liberado e config/dados via `XDG_CONFIG_HOME=/home/zeco/.config` e `XDG_DATA_HOME=/home/zeco/.local/share`. Provedor `opencode` (OpenCode Zen) no plano gratuito: 11 modelos com custo 0, por exemplo `opencode/deepseek-v4.1-flash-free` (validado end-to-end) e `opencode/minimax-m3.1-flash-free`. Dentro da jail o `--standalone` é obrigatório. **Ainda não é visível na sandbox do `claude`**, onde o desenvolvimento roda: para testar o provedor de verdade daqui, os mesmos mapeamentos precisam valer também para `[commands.claude]`.
 - **Busca de vagas** (`/jobs/search/`) usa a interface clássica:
   - URL com filtros: `keywords`, `location=Brasil`, `geoId=106057199`, `f_AL=true` (Easy Apply), `f_WT=2` (remoto), `f_TPR=r604800` (7 dias), `f_E` (nível).
   - A lista tem 25 vagas por página. Cada card tem `data-job-id` (que é o ID da vaga) e um link `/jobs/view/<id>/`. Título, empresa e local vêm do card (`artdeco-entity-lockup__title`, `__subtitle`, `__caption`).
@@ -47,13 +47,14 @@ src/autoapply/
     ├── jobs/
     │   ├── models.py        # JobCard, Job, JobStatus
     │   ├── search_url.py    # monta a URL de busca com os filtros
-    │   ├── parsing.py       # HTML do card e do painel → dados (funções puras)
+    │   ├── parsing.py       # HTML do card e do painel → dados (funções puras) com selectolax
     │   ├── filters.py       # bloqueios por título, empresa e palavras
     │   ├── store.py         # leitura e escrita de vagas no banco
     │   ├── collector.py     # navegação Playwright: busca, rolagem, clique, ritmo
     │   └── commands.py      # `coletar`, `vagas`
     ├── matching/
     │   ├── models.py        # JobAnalysis, Analyzer
+    │   ├── store.py         # leitura e escrita de análises no banco
     │   ├── keywords.py      # vocabulário, pré-score e análise simplificada
     │   ├── prompt.py        # prompt e JSON Schema da análise
     │   ├── providers.py     # claude CLI, opencode CLI, detecção e fallback
@@ -129,6 +130,8 @@ CREATE TABLE IF NOT EXISTS analyses (
 5. **Filtros antes de abrir a vaga**, sobre o card (`filters.py`, funções puras):
    - ID já no banco → pula (não conta como nova);
    - `termos_bloqueados_no_titulo`, `empresas_bloqueadas` → `ignorada`, com o motivo.
+   - Exceção: um termo bloqueado não corta o título que também cita um nível configurado (ex.: "Pleno/Sênior", "Jr/Sr").
+   - Só cerca de 7 dos 25 cards vêm renderizados no início: é preciso rolar a lista até todos terem título.
    - O local **não** é filtrado: vaga remota de fora do Brasil segue normalmente e o local aparece no `vaga.md`.
 6. **Detalhe:** clica no card, espera o painel com `currentJobId=<id>` e lê descrição, modalidade, data e o botão Easy Apply. Se não tiver "Candidatura simplificada" → `ignorada`. Se `palavras_bloqueadas` aparecerem na descrição → `ignorada`.
 7. Grava como `coletada`.
@@ -162,7 +165,7 @@ CREATE TABLE IF NOT EXISTS analyses (
 | Provedor | Disponível quando | Chamada |
 |---|---|---|
 | `claude` | `claude` no PATH | `claude -p --output-format json --json-schema <schema> --model <llm.claude.modelo> --tools "" --no-session-persistence`, prompt no stdin; lê `structured_output` |
-| `opencode` | `opencode` no PATH | `opencode run --model <llm.opencode.modelo> ...`, com o prompt pedindo só JSON; extrai e valida o JSON da saída. **Flags exatas a confirmar** depois do mapeamento |
+| `opencode` | `opencode` no PATH | `opencode run --standalone -m <llm.opencode.modelo> --format json "<prompt>"`, com o prompt pedindo só JSON; extrai e valida o JSON da resposta. Não existe `--json-schema`: a validação é feita pelo nosso código. **O formato exato do `--format json` ainda precisa ser capturado** |
 | `palavras_chave` | sempre | análise simplificada (7.4) |
 
 - A ordem vem de `llm.provedores`. A disponibilidade é verificada uma vez por execução, e o terminal mostra qual provedor foi usado.
@@ -230,7 +233,7 @@ O LinkedIn real e os LLMs reais **nunca** são chamados nos testes. Eles são va
 
 - [x] **T1 — Config do LLM.** Campos `llm` e `regras.analise_llm_max_vagas`, com validação e exibição no `validar`.
 - [x] **T2 — Banco.** `shared/database.py` e `jobs/store.py`.
-- [ ] **T3 — URL, parsing e filtros.** Funções puras com fixtures.
+- [x] **T3 — URL, parsing e filtros.** Funções puras com fixtures.
 - [ ] **T4 — Coletor + `coletar`.** Playwright com rotas, ritmo, dump e tabela final. *Pronto:* testes passam e uma coleta real grava vagas.
 - [ ] **T5 — Pré-score e análise simplificada.**
 - [ ] **T6 — Provedores LLM.** claude CLI, opencode CLI, retry e fallback. *Pronto:* testes com executáveis falsos e uma análise real com `claude`.
