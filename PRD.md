@@ -1,10 +1,10 @@
 # PRD: LinkedIn Auto-Apply
 
-**Status:** Em desenvolvimento (M1 concluído)
+**Status:** Em desenvolvimento (M2 concluído)
 **Autor:** Ze fernando
 **Criado em:** 2026-10-21
 **Atualizado em:** 2026-10-21
-**Versão:** 0.4
+**Versão:** 0.5
 
 ---
 
@@ -117,10 +117,10 @@ para não precisar navegar no LinkedIn manualmente.
 
 **Critérios de aceite:**
 
-- [ ] O sistema coleta só vagas com **Easy Apply**.
-- [ ] Para cada vaga, salva: ID, título, empresa, local, modalidade, data, descrição completa e link.
-- [ ] Dado que uma vaga já foi coletada ou aplicada, quando ela aparece de novo, então ela não é duplicada.
-- [ ] Vagas de empresas ou com palavras bloqueadas são descartadas.
+- [x] O sistema coleta só vagas com **Easy Apply**.
+- [x] Para cada vaga, salva: ID, título, empresa, local, modalidade, data, descrição completa e link.
+- [x] Dado que uma vaga já foi coletada ou aplicada, quando ela aparece de novo, então ela não é duplicada.
+- [x] Vagas de empresas ou com palavras bloqueadas são descartadas.
 
 ### Épico 3: Modo busca (curadoria manual)
 
@@ -134,10 +134,10 @@ para adaptar meu currículo com precisão.
 
 **Critérios de aceite:**
 
-- [ ] O comando `buscar` gera uma pasta por vaga em `vagas/<data>-<empresa>-<cargo>/`.
-- [ ] Cada pasta contém um `vaga.md` com: descrição completa, link, requisitos e palavras-chave extraídos, currículo base sugerido, score e **gap** (o que a vaga pede e o currículo não mostra).
-- [ ] As 10 vagas são ordenadas por score e ficam com o status `aguardando_cv`.
-- [ ] Vagas que já estão em `aguardando_cv` não entram de novo nas próximas buscas.
+- [x] O comando `buscar` gera uma pasta por vaga em `vagas/<data>-<empresa>-<cargo>/`.
+- [x] Cada pasta contém um `vaga.md` com: descrição completa, link, requisitos e palavras-chave extraídos, currículo base sugerido, score e **gap** (o que a vaga pede e o currículo não mostra).
+- [x] As 10 vagas são ordenadas por score e ficam com o status `aguardando_cv`.
+- [x] Vagas que já estão em `aguardando_cv` não entram de novo nas próximas buscas.
 
 #### História 3.2: Aplicar com o currículo adaptado (P0)
 
@@ -334,19 +334,22 @@ cv_base/ ──┼─► [Coleta] ─► banco local ─► [Match] ─┬─►
 - **Linguagem:** Python 3.15+
 - **Navegador:** Playwright, com a sessão salva em disco
 - **Banco:** SQLite (vagas, matches, candidaturas, status)
-- **Match e ajuste de CV:** primeiro filtros por regras (baratos), depois LLM (Claude) só nas vagas que passaram
+- **Match:** primeiro filtros por regras e pré-score por palavras-chave (baratos), depois LLM nas melhores vagas pelo CLI do Claude Code (`claude -p`) ou do OpenCode (`opencode run`), com retry, fallback entre provedores e, por último, análise simplificada por palavras-chave
+- **Ajuste de CV:** LLM (M4)
 - **Geração de PDF do CV ajustado:** a definir (ex.: template HTML → PDF)
-- **CLI:** comandos `login`, `buscar`, `aplicar`, `rodar`, `pendentes`, `relatorio`. Execução sempre manual.
+- **CLI:** comandos `validar`, `login`, `sessao`, `coletar`, `buscar` e `vagas` (prontos); `aplicar`, `rodar`, `pendentes` e `relatorio` (M3 e M4). Execução sempre manual.
 - **Terminal:** Rich (painéis, barras de progresso, tabelas e log colorido)
 
 ### Ciclo de vida da vaga
 
 `coletada → avaliada → (aguardando_cv | aprovada | ignorada) → aplicada | falhou | pendente_pergunta`
 
+No M2, a vaga cortada pelos filtros já na coleta (título, empresa, palavras ou sem Easy Apply) é gravada direto como `ignorada`, com o motivo.
+
 ### Dados e privacidade
 
 - O `config.md`, os currículos e o banco ficam só na máquina local e no `.gitignore`.
-- Só o texto da vaga e do currículo é enviado ao LLM. Telefone, e-mail e endereço não são enviados.
+- Só o texto da vaga e do currículo, os níveis e os anos de experiência são enviados ao LLM. Telefone e e-mail são mascarados antes do envio; endereço e documentos não são enviados.
 
 ---
 
@@ -372,7 +375,7 @@ cv_base/ ──┼─► [Coleta] ─► banco local ─► [Match] ─┬─►
 | ----------------- | ------------------------------------------------------------------------------ | ------ |
 | M0: Currículo ✔   | Análise do `cv.docx` original, pesquisa de vagas remotas no Brasil, recomendação de focos e **v2 melhorada** em `cv_base/` como padrão | 0 (antes de implementar) |
 | M1: Base ✔        | `config.md`, currículos, login persistente (`validar`, `login`, `sessao`) | 1      |
-| M2: Leitura       | Coleta + match + **modo busca** completo (até gerar as pastas)                 | 2      |
+| M2: Leitura ✔     | Coleta + match + **modo busca** completo (`coletar`, `buscar`, `vagas`)        | 2      |
 | M3: Aplicação     | Easy Apply (com CV adaptado e no modo normal) + limite + pendentes + simulação | 3      |
 | M4: Ajuste por IA | Ajuste automático do CV com verificação + relatório                            | 4      |
 
@@ -430,3 +433,4 @@ cv_base/ ──┼─► [Coleta] ─► banco local ─► [Match] ─┬─►
 | 0.2    | 2026-10-21 | Busca padrão: remoto em todo o Brasil; resposta genérica para texto livre; formato do CV adiado; focos dos currículos a definir pela análise do CV base |
 | 0.3    | 2026-10-21 | Score 70 e 15/dia; execução manual com logs Rich (Épico 6); currículos em `cv_base/` aceitando .docx; M0 = análise do CV e v2 antes da implementação |
 | 0.4    | 2026-10-21 | M0 e M1 concluídos; 3 currículos base; critérios de aceite das Histórias 1.1, 1.2 e 5.1 atualizados |
+| 0.5    | 2026-10-21 | M2 concluído; Histórias 2.1 e 3.1 atendidas; match por Claude Code ou OpenCode com fallback por palavras-chave; privacidade do envio ao LLM detalhada |
