@@ -1,6 +1,7 @@
-from enum import StrEnum
 from html.parser import HTMLParser
 from urllib.parse import urlparse
+
+from autoapply.modules.session.models import PageState
 
 LOGGED_IN_PATH_PREFIXES = ("/feed", "/jobs", "/in/")
 LOGGED_OUT_PATH_PREFIXES = ("/login", "/uas/login", "/authwall")
@@ -9,13 +10,6 @@ GLOBAL_NAV_LINK_PREFIXES = ("/mynetwork", "/messaging")
 CAPTCHA_MARKERS = ("captcha", "/checkpoint/challenge")
 
 HtmlTag = tuple[str, dict[str, str]]
-
-
-class PageState(StrEnum):
-    LOGGED_IN = "LOGGED_IN"
-    LOGGED_OUT = "LOGGED_OUT"
-    CHECKPOINT = "CHECKPOINT"
-    UNKNOWN = "UNKNOWN"
 
 
 def collect_tags(html: str) -> list[HtmlTag]:

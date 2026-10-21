@@ -195,7 +195,7 @@ Os seletores ficam centralizados em `detection.py`. A detecção é uma função
   - `LOGGED_IN` → OK (código 0).
   - `LOGGED_OUT` → "Sessão expirada, rode `autoapply login`" (código 1).
   - `CHECKPOINT`/`UNKNOWN` → salva screenshot + HTML em `debug/<timestamp>-<estado>/` e avisa (código 3).
-- **API interna** usada pelos próximos marcos: `ensure_session() -> BrowserContext`. Levanta `SessionExpired` ou `CheckpointDetected`, que interrompem a execução inteira.
+- **API interna** usada pelos próximos marcos: `with open_browser_context(headless, profile_dir) as context:` abre o navegador e `ensure_session(context) -> Page` devolve a página do feed. Levanta `SessionExpired`, `CheckpointDetected` ou `UnknownPageState`, que interrompem a execução inteira.
 
 ## 7. CLI e logs
 
@@ -224,7 +224,7 @@ autoapply --verbose ...     # nível DEBUG no terminal
 | Respostas | Normalização (acentos, pontuação), colisão de chaves, tabela e blockquote do corpo |
 | Currículos | `.docx` gerado no teste com `python-docx`; PDF com texto; PDF sem texto → inválido |
 | Detecção | `detect_page_state(url, html)` com HTML salvo de cada estado em `tests/fixtures/pages/` |
-| Sessão | Playwright headless com `context.route("**/linkedin.com/**")` servindo as páginas fixture. Nunca acessa o LinkedIn de verdade |
+| Sessão | Playwright headless com `context.route("**/*")` servindo as páginas fixture. Nunca acessa o LinkedIn de verdade. Sem redirecionamento 302, porque o Playwright não intercepta o destino do redirect; uma trava no fixture falha o teste se alguma requisição escapar da rota |
 | CLI | `typer.testing.CliRunner` para `validar` (códigos de saída e textos principais) |
 
 **Ficam sem teste automático:** o login real e a sessão real. São validados à mão no critério de pronto.
@@ -245,7 +245,7 @@ autoapply --verbose ...     # nível DEBUG no terminal
   *Pronto:* `uv run autoapply validar` com o `config.md` real mostra tudo OK.
 - [x] **T7 — `session/detection.py`.** Estados por URL/DOM com fixtures HTML.
   *Pronto:* testes passam para os 4 estados.
-- [ ] **T8 — `session/browser.py` + `login`/`sessao`.** Contexto persistente, polling do login, `ensure_session()`, dump em `debug/`.
+- [x] **T8 — `session/browser.py` + `login`/`sessao`.** Contexto persistente, polling do login, `ensure_session()`, dump em `debug/`.
   *Pronto:* testes com rotas interceptadas passam, e o teste manual (login uma vez e `sessao` OK depois) funciona.
 - [ ] **T9 — Fechamento.** README curto (setup e comandos) e atualização do PRD (M1 concluído).
 
