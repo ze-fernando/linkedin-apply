@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from playwright.sync_api import BrowserContext, Page, sync_playwright
+from playwright.sync_api import BrowserContext, Error, Page, sync_playwright
 
 from autoapply.modules.session.detection import detect_page_state
 from autoapply.modules.session.models import (
@@ -52,8 +52,15 @@ def read_page_state(page: Page) -> PageState:
     return detect_page_state(page.url, page.content())
 
 
+def read_page_state_while_navigating(page: Page) -> PageState:
+    try:
+        return read_page_state(page)
+    except Error:
+        return PageState.UNKNOWN
+
+
 def read_context_state(context: BrowserContext) -> PageState:
-    states = [read_page_state(page) for page in context.pages]
+    states = [read_page_state_while_navigating(page) for page in context.pages]
     return next((state for state in STATE_PRIORITY if state in states), PageState.UNKNOWN)
 
 
