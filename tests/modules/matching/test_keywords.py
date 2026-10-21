@@ -36,13 +36,26 @@ def test_build_vocabulary_joins_experience_keys_and_fixed_terms_without_repeatin
     valid_data: dict[str, object], base_dir: Path
 ) -> None:
     data = copy.deepcopy(valid_data)
-    data["experiencia_anos"] = {"total_desenvolvimento": 5, "Python": 3, "c#": 2}
+    data["experiencia_anos"] = {"total_desenvolvimento": 5, "Python": 3, "java": 2}
     vocabulary = build_vocabulary(parse_config_data(data, base_dir))
 
-    assert vocabulary[:2] == ["Python", "c#"]
+    assert vocabulary[:2] == ["Python", "java"]
     assert "total_desenvolvimento" not in vocabulary
-    assert [term.casefold() for term in vocabulary].count("c#") == 1
+    assert [term.casefold() for term in vocabulary].count("java") == 1
     assert {"Kafka", "ASP.NET Core", "Testes unitários"} <= set(vocabulary)
+
+
+def test_build_vocabulary_skips_short_and_zero_year_experience_keys_but_keeps_fixed_terms(
+    valid_data: dict[str, object], base_dir: Path
+) -> None:
+    data = copy.deepcopy(valid_data)
+    data["experiencia_anos"] = {"Python": 3, "Go": 4, "Lua": 0, "Kotlin": 0}
+    vocabulary = build_vocabulary(parse_config_data(data, base_dir))
+
+    assert "Python" in vocabulary
+    assert "Go" not in vocabulary
+    assert "Lua" not in vocabulary
+    assert {"C#", "Kotlin", "Make"} <= set(vocabulary)
 
 
 def build_resume(name: str, text: str, is_default: bool = False, problem: str | None = None) -> Resume:

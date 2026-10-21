@@ -6,6 +6,8 @@ from autoapply.modules.resumes.models import Resume
 from autoapply.shared.text import contains_term, normalize_text
 
 NON_TECHNOLOGY_EXPERIENCE_KEYS = {"total_desenvolvimento"}
+MIN_EXPERIENCE_TERM_LENGTH = 3
+MIN_EXPERIENCE_TERM_YEARS = 1
 SIMPLIFIED_ANALYSIS_SUMMARY = "Análise simplificada por palavras-chave (sem LLM)."
 TECH_VOCABULARY = [
     "C#",
@@ -85,7 +87,13 @@ def unique_terms(terms: list[str]) -> list[str]:
 
 
 def build_vocabulary(config: Config) -> list[str]:
-    experience_terms = [key for key in config.experiencia_anos if key not in NON_TECHNOLOGY_EXPERIENCE_KEYS]
+    experience_terms = [
+        key
+        for key, years in config.experiencia_anos.items()
+        if key not in NON_TECHNOLOGY_EXPERIENCE_KEYS
+        and len(key) >= MIN_EXPERIENCE_TERM_LENGTH
+        and years >= MIN_EXPERIENCE_TERM_YEARS
+    ]
     return unique_terms(experience_terms + TECH_VOCABULARY)
 
 
