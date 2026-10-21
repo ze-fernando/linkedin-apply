@@ -1,6 +1,6 @@
 # Spec técnica — M1: Base
 
-**Status:** Aprovado · **Atualizado:** 2026-10-21
+**Status:** Concluído · **Atualizado:** 2026-10-21
 **PRD:** [../PRD.md](../PRD.md) — Épico 1 (config e currículos), História 5.1 (login persistente), Épico 6 (logs com Rich, parcial)
 
 ## 1. Objetivo
@@ -247,7 +247,7 @@ autoapply --verbose ...     # nível DEBUG no terminal
   *Pronto:* testes passam para os 4 estados.
 - [x] **T8 — `session/browser.py` + `login`/`sessao`.** Contexto persistente, polling do login, `ensure_session()`, dump em `debug/`.
   *Pronto:* testes com rotas interceptadas passam, e o teste manual (login uma vez e `sessao` OK depois) funciona.
-- [ ] **T9 — Fechamento.** README curto (setup e comandos) e atualização do PRD (M1 concluído).
+- [x] **T9 — Fechamento.** README curto (setup e comandos) e atualização do PRD (M1 concluído).
 
 Ordem: T1 → T2 → (T3 → T4) ∥ T5 → T6 → T7 → T8 → T9. Um commit semântico por tarefa concluída.
 

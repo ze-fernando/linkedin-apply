@@ -1,10 +1,10 @@
 # PRD: LinkedIn Auto-Apply
 
-**Status:** Rascunho
+**Status:** Em desenvolvimento (M1 concluído)
 **Autor:** Ze fernando
 **Criado em:** 2026-10-21
 **Atualizado em:** 2026-10-21
-**Versão:** 0.3
+**Versão:** 0.4
 
 ---
 
@@ -84,12 +84,12 @@ para que o sistema preencha qualquer formulário sem me perguntar de novo.
 
 **Critérios de aceite:**
 
-- [ ] O `config.md` contém: nome, e-mail, telefone, cidade, LinkedIn, GitHub e portfólio, pretensão salarial, disponibilidade, modelo de trabalho aceito, idiomas e anos de experiência por tecnologia.
-- [ ] O `config.md` contém uma seção de **respostas padrão** (pergunta → resposta), por exemplo: "Possui CNH?" → "Sim".
-- [ ] O `config.md` contém uma seção de **buscas**: palavras-chave, localização, remoto/híbrido/presencial, senioridade e data de publicação. Padrão: **somente vagas remotas, localização "Brasil"** (todo o país).
-- [ ] O `config.md` contém uma **resposta genérica** para perguntas de texto livre (ex.: "Por que quer trabalhar aqui?").
-- [ ] O `config.md` contém uma seção de **regras**: empresas e palavras bloqueadas, score mínimo, limite diário de candidaturas.
-- [ ] Dado um `config.md` com erro de formato, quando executo qualquer comando, então o sistema aponta a linha e o campo inválidos e não executa.
+- [x] O `config.md` contém: nome, e-mail, telefone, cidade, LinkedIn, GitHub e portfólio, pretensão salarial, disponibilidade, modelo de trabalho aceito, idiomas e anos de experiência por tecnologia.
+- [x] O `config.md` contém uma seção de **respostas padrão** (pergunta → resposta), por exemplo: "Possui CNH?" → "Sim".
+- [x] O `config.md` contém uma seção de **buscas**: palavras-chave, localização, remoto/híbrido/presencial, senioridade e data de publicação. Padrão: **somente vagas remotas, localização "Brasil"** (todo o país).
+- [x] O `config.md` contém uma **resposta genérica** para perguntas de texto livre (ex.: "Por que quer trabalhar aqui?").
+- [x] O `config.md` contém uma seção de **regras**: empresas e palavras bloqueadas, score mínimo, limite diário de candidaturas.
+- [x] Dado um `config.md` com erro de formato, quando executo qualquer comando, então o sistema aponta a linha e o campo inválidos e não executa. *(No M1, pelo `autoapply validar`.)*
 
 #### História 1.2: Currículos base (P0)
 
@@ -101,9 +101,9 @@ para que o sistema use o mais adequado para cada vaga.
 
 **Critérios de aceite:**
 
-- [ ] Os currículos ficam na pasta `cv_base/` e cada um tem nome, idioma e área. O currículo padrão é a v2 gerada na análise do CV original (ver M0 no cronograma).
-- [ ] O sistema aceita `.docx` e `.pdf` e extrai o texto para usar no match.
-- [ ] Edge case: se o PDF é escaneado (sem texto), o sistema avisa e não usa esse currículo.
+- [ ] Os currículos ficam na pasta `cv_base/` e cada um tem nome, idioma e área. O currículo padrão é a v2 gerada na análise do CV original (ver M0 no cronograma). *(M1: pasta, nome e padrão prontos; idioma e área ainda não são campos do `config.md`.)* *(M1: `cv_base/` e nome prontos; idioma e área ainda não são campos do `config.md`.)*
+- [x] O sistema aceita `.docx` e `.pdf` e extrai o texto para usar no match.
+- [x] Edge case: se o PDF é escaneado (sem texto), o sistema avisa e não usa esse currículo.
 
 ### Épico 2: Coleta de vagas
 
@@ -213,8 +213,8 @@ para reduzir o risco de bloqueio e não digitar a senha sempre.
 
 **Critérios de aceite:**
 
-- [ ] O primeiro login é manual, numa janela do navegador. Depois disso, a sessão é reaproveitada.
-- [ ] Dado que o LinkedIn pede verificação (CAPTCHA ou código), a execução **para** e avisa. O sistema nunca tenta resolver a verificação sozinho.
+- [x] O primeiro login é manual, numa janela do navegador. Depois disso, a sessão é reaproveitada.
+- [x] Dado que o LinkedIn pede verificação (CAPTCHA ou código), a execução **para** e avisa. O sistema nunca tenta resolver a verificação sozinho.
 
 #### História 5.2: Modo simulação (P1)
 
@@ -370,8 +370,8 @@ cv_base/ ──┼─► [Coleta] ─► banco local ─► [Match] ─┬─►
 
 | Marco             | Entrega                                                                        | Semana |
 | ----------------- | ------------------------------------------------------------------------------ | ------ |
-| M0: Currículo     | Análise do `cv.docx` original, pesquisa de vagas remotas no Brasil, recomendação de focos e **v2 melhorada** em `cv_base/` como padrão | 0 (antes de implementar) |
-| M1: Base          | `config.md`, currículos, login persistente                                     | 1      |
+| M0: Currículo ✔   | Análise do `cv.docx` original, pesquisa de vagas remotas no Brasil, recomendação de focos e **v2 melhorada** em `cv_base/` como padrão | 0 (antes de implementar) |
+| M1: Base ✔        | `config.md`, currículos, login persistente (`validar`, `login`, `sessao`) | 1      |
 | M2: Leitura       | Coleta + match + **modo busca** completo (até gerar as pastas)                 | 2      |
 | M3: Aplicação     | Easy Apply (com CV adaptado e no modo normal) + limite + pendentes + simulação | 3      |
 | M4: Ajuste por IA | Ajuste automático do CV com verificação + relatório                            | 4      |
@@ -402,10 +402,10 @@ cv_base/ ──┼─► [Coleta] ─► banco local ─► [Match] ─┬─►
 ## Perguntas em aberto
 
 - [x] **Quais buscas iniciais?** Só vagas remotas, em todo o Brasil. Os cargos e palavras-chave saem da análise do CV base (item abaixo).
-- [ ] **Quantos currículos base e em quais focos?** Recomendação após a análise do CV (M0): **2 currículos**, nível Júnior/Pleno.
-  1. **Back-end .NET (C#)** — padrão, `cv_base/cv_padrao_v2.docx` (já gerado). Buscas: "Desenvolvedor .NET", "Desenvolvedor C#", "Back-end .NET", "ASP.NET Core".
+- [x] **Quantos currículos base e em quais focos?** Recomendação após a análise do CV (M0): 2 currículos, nível Júnior/Pleno. **Decidido: 3 currículos** (`cv_base/dotnet.docx` padrão, `automacao.docx` e `fullstack.docx`).
+  1. **Back-end .NET (C#)** — padrão, `cv_base/dotnet.docx`. Buscas: "Desenvolvedor .NET", "Desenvolvedor C#", "Back-end .NET", "ASP.NET Core".
   2. **Automação e integrações** (Python, n8n, APIs, bots) — a criar a partir da v2. Buscas: "Desenvolvedor de Automação", "RPA", "n8n", "Desenvolvedor Python".
-  - Full-stack (.NET + React/Svelte) fica para depois, se o modo busca mostrar muita vaga desse tipo.
+  3. **Full Stack TypeScript** — `cv_base/fullstack.docx`, criado junto com os outros dois.
 - [ ] **Formato do CV ajustado:** template próprio ou edição do PDF original? *Adiado — decidir antes do M4.*
 - [x] **Score mínimo e limite diário iniciais:** score 70 e 15 candidaturas por dia (configuráveis).
 - [x] **Perguntas de texto livre:** usar uma resposta genérica definida no `config.md`.
@@ -429,3 +429,4 @@ cv_base/ ──┼─► [Coleta] ─► banco local ─► [Match] ─┬─►
 | 0.1    | 2026-10-21 | Rascunho inicial |
 | 0.2    | 2026-10-21 | Busca padrão: remoto em todo o Brasil; resposta genérica para texto livre; formato do CV adiado; focos dos currículos a definir pela análise do CV base |
 | 0.3    | 2026-10-21 | Score 70 e 15/dia; execução manual com logs Rich (Épico 6); currículos em `cv_base/` aceitando .docx; M0 = análise do CV e v2 antes da implementação |
+| 0.4    | 2026-10-21 | M0 e M1 concluídos; 3 currículos base; critérios de aceite das Histórias 1.1, 1.2 e 5.1 atualizados |
