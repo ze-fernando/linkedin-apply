@@ -3,7 +3,8 @@ from importlib.metadata import version
 import typer
 
 from autoapply.modules.config.commands import validate
-from autoapply.modules.jobs.commands import collect
+from autoapply.modules.jobs.commands import collect, show_jobs
+from autoapply.modules.search_mode.commands import search
 from autoapply.modules.session.commands import check_session_status, login
 from autoapply.shared.console import configure_logging, console
 from autoapply.shared.paths import LOGS_DIR
@@ -17,6 +18,8 @@ app.command("validar", help="Valida o config.md e os currículos.")(validate)
 app.command("login", help="Abre o navegador para você fazer login no LinkedIn.")(login)
 app.command("sessao", help="Verifica se a sessão do LinkedIn está ativa.")(check_session_status)
 app.command("coletar", help="Coleta vagas Easy Apply do LinkedIn e grava no banco.")(collect)
+app.command("buscar", help="Coleta, avalia e cria as pastas das melhores vagas em vagas/.")(search)
+app.command("vagas", help="Mostra as vagas guardadas no banco.")(show_jobs)
 
 
 def show_version(requested: bool) -> None:

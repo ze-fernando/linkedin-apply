@@ -238,7 +238,7 @@ O LinkedIn real e os LLMs reais **nunca** são chamados nos testes. Eles são va
 - [x] **T5 — Pré-score e análise simplificada.**
 - [x] **T6 — Provedores LLM.** claude CLI, opencode CLI, retry e fallback. *Pronto:* testes com executáveis falsos e uma análise real com `claude`.
 - [x] **T7 — Avaliação.** Pipeline completo gravando `analyses`.
-- [ ] **T8 — Modo busca + `buscar` e `vagas`.** *Pronto:* o critério de pronto da seção 1 com a sessão real.
+- [x] **T8 — Modo busca + `buscar` e `vagas`.** *Pronto:* o critério de pronto da seção 1 com a sessão real.
 - [ ] **T9 — Fechamento.** README e PRD.
 
 Ordem: T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8 → T9. TDD, com as seams combinadas antes, e um commit por tarefa na `develop`.

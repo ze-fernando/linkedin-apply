@@ -90,15 +90,19 @@ def load_valid_config(config_path: Path) -> Config:
         raise typer.Exit(INVALID_CONFIG_EXIT_CODE) from error
 
 
+def load_valid_resumes(config: Config) -> list[Resume]:
+    try:
+        return load_resumes(config)
+    except DefaultResumeUnreadable as error:
+        console.print(f"[red]✖ {error}[/]")
+        raise typer.Exit(INVALID_CONFIG_EXIT_CODE) from error
+
+
 def validate(
     config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
 ) -> None:
     config = load_valid_config(config_path)
-    try:
-        resumes = load_resumes(config)
-    except DefaultResumeUnreadable as error:
-        console.print(f"[red]✖ {error}[/]")
-        raise typer.Exit(INVALID_CONFIG_EXIT_CODE) from error
+    resumes = load_valid_resumes(config)
     console.print(build_profile_panel(config))
     console.print(build_resumes_table(resumes))
     console.print(build_llm_table(config.llm))
