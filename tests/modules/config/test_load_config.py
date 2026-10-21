@@ -163,3 +163,30 @@ def test_load_config_reports_frontmatter_that_is_not_a_mapping(base_dir: Path, f
     assert issues == [
         ConfigIssue(line=2, field="frontmatter", problem="o bloco YAML deve ter os campos do config (chave: valor)")
     ]
+
+
+def test_load_config_reports_unknown_llm_provider_with_line(
+    valid_data: dict[str, object], write_config: Callable[..., Path]
+) -> None:
+    data = copy.deepcopy(valid_data)
+    data["llm"]["provedores"] = ["gpt", "claude"]
+    config_path = write_config(data)
+
+    [issue] = collect_issues(config_path)
+
+    assert issue.field == "llm.provedores.0"
+    assert issue.line == line_number_of(config_path, "- gpt")
+    assert "'claude' or 'opencode'" in issue.problem
+
+
+def test_load_config_rejects_zero_llm_analysis_limit(
+    valid_data: dict[str, object], write_config: Callable[..., Path]
+) -> None:
+    data = copy.deepcopy(valid_data)
+    data["regras"]["analise_llm_max_vagas"] = 0
+    config_path = write_config(data)
+
+    [issue] = collect_issues(config_path)
+
+    assert issue.field == "regras.analise_llm_max_vagas"
+    assert issue.line == line_number_of(config_path, "analise_llm_max_vagas: 0")

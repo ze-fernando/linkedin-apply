@@ -5,7 +5,8 @@ from rich.panel import Panel
 from rich.table import Table
 
 from autoapply.modules.config.loader import load_config
-from autoapply.modules.config.models import Config, ConfigError, ConfigIssue
+from autoapply.modules.config.models import Config, ConfigError, ConfigIssue, Llm, ProvedorLlm
+from autoapply.modules.matching.providers import find_available_providers, find_provider_model
 from autoapply.modules.resumes.loader import count_visible_characters, load_resumes
 from autoapply.modules.resumes.models import DefaultResumeUnreadable, Resume
 from autoapply.shared.console import console
@@ -33,6 +34,25 @@ def build_profile_panel(config: Config) -> Panel:
         f"[bold]Regras:[/] score mínimo {config.regras.score_minimo}  ·  limite {config.regras.limite_diario}/dia",
     ]
     return Panel("\n".join(lines), title="Perfil", expand=False)
+
+
+def describe_provider_status(provider: ProvedorLlm, model: str | None, available: list[ProvedorLlm]) -> str:
+    if model is None:
+        return "[yellow]sem modelo[/]"
+    if provider in available:
+        return "[green]disponível[/]"
+    return "[yellow]não encontrado[/]"
+
+
+def build_llm_table(llm: Llm) -> Table:
+    available = find_available_providers(llm)
+    table = Table(title="LLM")
+    for column in ["Ordem", "Provedor", "Modelo", "Status"]:
+        table.add_column(column)
+    for position, provider in enumerate(llm.provedores, start=1):
+        model = find_provider_model(llm, provider)
+        table.add_row(str(position), provider, model or "", describe_provider_status(provider, model, available))
+    return table
 
 
 def build_resumes_table(resumes: list[Resume]) -> Table:
@@ -77,6 +97,7 @@ def validate(
         raise typer.Exit(INVALID_CONFIG_EXIT_CODE) from error
     console.print(build_profile_panel(config))
     console.print(build_resumes_table(resumes))
+    console.print(build_llm_table(config.llm))
     ignored_warning = describe_ignored_resumes(resumes)
     if ignored_warning:
         console.print(ignored_warning)

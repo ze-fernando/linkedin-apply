@@ -26,6 +26,16 @@ def test_parse_config_data_returns_typed_config_for_valid_data(
     assert config.regras.limite_diario == 15
 
 
+def test_parse_config_data_reads_llm_section(valid_data: dict[str, object], base_dir: Path) -> None:
+    config = parse_config_data(valid_data, base_dir)
+
+    assert config.llm.provedores == ["claude", "opencode"]
+    assert config.llm.claude.modelo == "sonnet"
+    assert config.llm.opencode.modelo == "ollama/qwen3"
+    assert config.llm.timeout_segundos == 180
+    assert config.regras.analise_llm_max_vagas == 30
+
+
 def test_parse_config_data_rejects_form_salary_outside_range(
     valid_data: dict[str, object], base_dir: Path
 ) -> None:

@@ -96,6 +96,13 @@ def valid_data() -> dict[str, object]:
             "limite_diario": 15,
             "modo_busca_quantidade": 10,
             "ajuste_cv_ia": False,
+            "analise_llm_max_vagas": 30,
+        },
+        "llm": {
+            "provedores": ["claude", "opencode"],
+            "claude": {"modelo": "sonnet"},
+            "opencode": {"modelo": "ollama/qwen3"},
+            "timeout_segundos": 180,
         },
         "respostas": {"aceita pj": "Sim"},
         "resposta_generica": "Tenho interesse na vaga.",

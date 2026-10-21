@@ -10,6 +10,7 @@ EMAIL_PATTERN = re.compile(r"[^\s@]+@[^\s@]+\.[^\s@]+")
 
 NivelVaga = Literal["junior", "pleno"]
 NivelIdioma = Literal["basico", "intermediario", "avancado", "fluente", "nativo"]
+ProvedorLlm = Literal["claude", "opencode"]
 AnosExperiencia = Annotated[int, Field(ge=0)]
 
 
@@ -135,6 +136,22 @@ class Regras(StrictModel):
     limite_diario: int = Field(ge=1)
     modo_busca_quantidade: int
     ajuste_cv_ia: bool
+    analise_llm_max_vagas: int = Field(ge=1)
+
+
+class LlmClaude(StrictModel):
+    modelo: str
+
+
+class LlmOpencode(StrictModel):
+    modelo: str | None = None
+
+
+class Llm(StrictModel):
+    provedores: list[ProvedorLlm]
+    claude: LlmClaude
+    opencode: LlmOpencode
+    timeout_segundos: int = Field(ge=1)
 
 
 class Config(StrictModel):
@@ -149,6 +166,7 @@ class Config(StrictModel):
     busca: Busca
     curriculos: list[Curriculo]
     regras: Regras
+    llm: Llm
     respostas: dict[str, str]
     resposta_generica: str
 

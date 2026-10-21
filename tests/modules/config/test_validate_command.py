@@ -120,3 +120,55 @@ def test_validate_reports_missing_config_file_and_exits_two(base_dir: Path, monk
     assert result.exit_code == 2, result.output
     assert "config.md não encontrado" in result.output
     assert "Traceback" not in result.output
+
+
+@pytest.fixture
+def fake_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Callable[[list[str]], None]:
+    def install(executables: list[str]) -> None:
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir(exist_ok=True)
+        for name in executables:
+            executable = bin_dir / name
+            executable.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            executable.chmod(0o755)
+        monkeypatch.setenv("PATH", str(bin_dir))
+
+    return install
+
+
+def test_validate_shows_llm_providers_with_availability(
+    valid_data: dict[str, object],
+    base_dir: Path,
+    write_config: Callable[..., Path],
+    readable_resumes: None,
+    fake_path: Callable[[list[str]], None],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_path(["claude"])
+    write_config(copy.deepcopy(valid_data))
+
+    result = run_validate(base_dir, monkeypatch)
+
+    assert result.exit_code == 0, result.output
+    lines = result.output.splitlines()
+    assert any("claude" in line and "sonnet" in line and "disponível" in line for line in lines), result.output
+    assert any("opencode" in line and "ollama/qwen3" in line and "não encontrado" in line for line in lines), result.output
+
+
+def test_validate_marks_opencode_without_model_as_unusable(
+    valid_data: dict[str, object],
+    base_dir: Path,
+    write_config: Callable[..., Path],
+    readable_resumes: None,
+    fake_path: Callable[[list[str]], None],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_path(["claude", "opencode"])
+    data = copy.deepcopy(valid_data)
+    data["llm"]["opencode"] = {}
+    write_config(data)
+
+    result = run_validate(base_dir, monkeypatch)
+
+    assert result.exit_code == 0, result.output
+    assert any("opencode" in line and "sem modelo" in line for line in result.output.splitlines()), result.output
