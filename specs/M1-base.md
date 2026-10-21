@@ -241,7 +241,7 @@ autoapply --verbose ...     # nível DEBUG no terminal
   *Pronto:* testes de erro verificam linha e campo.
 - [x] **T5 — Currículos.** Módulo `resumes` com docx/pdf e detecção de texto insuficiente.
   *Pronto:* testes passam e os 3 CVs reais de `cv_base/` são lidos.
-- [ ] **T6 — Comando `validar`.** Painel, tabelas e códigos de saída.
+- [x] **T6 — Comando `validar`.** Painel, tabelas e códigos de saída.
   *Pronto:* `uv run autoapply validar` com o `config.md` real mostra tudo OK.
 - [ ] **T7 — `session/detection.py`.** Estados por URL/DOM com fixtures HTML.
   *Pronto:* testes passam para os 4 estados.

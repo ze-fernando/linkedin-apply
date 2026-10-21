@@ -2,11 +2,16 @@ from importlib.metadata import version
 
 import typer
 
+from autoapply.modules.config.commands import validate
+from autoapply.shared.console import configure_logging, console
+from autoapply.shared.paths import LOGS_DIR
+
 app = typer.Typer(
     name="autoapply",
     help="Candidatura automática a vagas Easy Apply do LinkedIn.",
     no_args_is_help=True,
 )
+app.command("validar", help="Valida o config.md e os currículos.")(validate)
 
 
 def show_version(requested: bool) -> None:
@@ -17,6 +22,7 @@ def show_version(requested: bool) -> None:
 
 @app.callback()
 def run_cli(
+    verbose: bool = typer.Option(False, "--verbose", "-v", help="Mostra mensagens de depuração."),
     show_version_flag: bool = typer.Option(
         False,
         "--version",
@@ -25,4 +31,4 @@ def run_cli(
         help="Mostra a versão e sai.",
     ),
 ) -> None:
-    pass
+    configure_logging(LOGS_DIR, verbose, console)
