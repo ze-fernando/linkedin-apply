@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS pending_questions (
    1. Lê o HTML do modal e extrai os campos (seção 2).
    2. Resolve a resposta de cada campo (seção 7). Se algum campo obrigatório ficar sem resposta, junta as pendentes da etapa, descarta o rascunho e devolve `pendente`.
    3. Preenche só o que precisa mudar: número e texto com `fill`, select com `select_option` pelo texto da opção, rádio com clique no `label` da opção.
-   4. **Etapa de currículo:** faz upload do arquivo escolhido pelo `input[type=file]` e confere que ele aparece selecionado.
+   4. **Etapa de currículo:** faz upload do arquivo escolhido pelo `input[type=file]`. A conferência de que ele aparece selecionado fica para a T5, com a captura real.
    5. Clica em Avançar ou Revisar. Se aparecer erro de validação, salva o dump e devolve `falhou` com o texto do erro.
 4. **Revisão:** desmarca "Siga a empresa".
 5. **Envio:** clica em Enviar. Com `--simular`, para aqui: não clica, descarta e devolve `simulada`.
@@ -227,7 +227,7 @@ O LinkedIn real **nunca** é chamado nos testes, e a trava de rede do M1 continu
 - [x] **T1 — Banco e pastas.** Status novos, tabelas novas, `job_folders` e `respostas.md` no `buscar`.
 - [x] **T2 — Parsing do formulário.** Fixtures e `form_parsing.py`.
 - [x] **T3 — Respostas.** `job_answers.py`, `answer_rules.py` e `answering.py`.
-- [ ] **T4 — Motor do Easy Apply.** Modal falso, preenchimento, upload, simulação, descarte e dump. *Pronto:* testes passam e `--simular` percorre 3 vagas reais até a revisão.
+- [x] **T4 — Motor do Easy Apply.** Modal falso, preenchimento, upload, simulação, descarte e dump. *Pronto:* testes passam e `--simular` percorre 3 vagas reais até a revisão.
 - [ ] **T5 — `aplicar` e runner.** Limite, ritmo, linhas e resumo. Migração: registra em `job_folders` as pastas criadas no M2 (ID lido do link no `vaga.md`). *Pronto:* uma candidatura real autorizada por você; a tela de sucesso e a vaga já aplicada são capturadas e viram fixture.
 - [ ] **T6 — `rodar`.** Seleção por score, ignoradas por score mínimo.
 - [ ] **T7 — `pendentes`.**

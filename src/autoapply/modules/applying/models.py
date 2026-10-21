@@ -108,3 +108,17 @@ class AnswerContext:
     config: Config
     job_answers: dict[str, str]
     job_title: str
+
+
+class ApplicationOutcome(StrEnum):
+    APPLIED = "aplicada"
+    PENDING = "pendente"
+    FAILED = "falhou"
+    SIMULATED = "simulada"
+
+
+@dataclass(frozen=True)
+class ApplicationResult:
+    outcome: ApplicationOutcome
+    reason: str | None
+    pending_fields: list[FormField]
