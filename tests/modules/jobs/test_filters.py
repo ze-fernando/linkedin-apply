@@ -63,3 +63,12 @@ def test_find_description_block_reason_matches_blocked_words(busca: Busca) -> No
     )
     assert find_description_block_reason("Exige Ingles Fluente.", blocking) == "descrição contém 'inglês fluente'"
     assert find_description_block_reason("Vaga remota, sem presencialidade.", blocking) is None
+
+
+@pytest.mark.parametrize(("title", "term"), [("Estágio Júnior em TI", "Estágio"), ("Gerente Júnior de Projetos", "Gerente")])
+def test_find_card_block_reason_keeps_non_seniority_terms_blocked_even_with_wanted_level(
+    busca: Busca, title: str, term: str
+) -> None:
+    blocking = busca.model_copy(update={"termos_bloqueados_no_titulo": ["Sênior", "Estágio", "Gerente"]})
+
+    assert find_card_block_reason(build_card(title), blocking) == f"título contém '{term}'"
