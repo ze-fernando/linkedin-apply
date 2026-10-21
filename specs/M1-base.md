@@ -178,7 +178,7 @@ class Resume:
 
 | Estado | Como detectar (por URL primeiro, DOM como reforço) |
 |---|---|
-| `LOGGED_IN` | URL com prefixo `/feed` (ex.: `/feed/foryou/`), `/jobs` ou `/in/`, e presença da barra de navegação global |
+| `LOGGED_IN` | URL com prefixo `/feed` (ex.: `/feed/foryou/`), `/jobs` ou `/in/`, e presença da barra de navegação global (links para `/mynetwork` ou `/messaging`, porque as classes do LinkedIn são ofuscadas) |
 | `LOGGED_OUT` | URL em `/login`, `/uas/login`, `/authwall` ou formulário de login visível |
 | `CHECKPOINT` | URL em `/checkpoint/` ou `/challenge`, ou iframe/elemento de CAPTCHA |
 | `UNKNOWN` | Nenhum dos anteriores |
@@ -223,7 +223,7 @@ autoapply --verbose ...     # nível DEBUG no terminal
 | Config: erros | Um caso por regra (YAML quebrado, campo extra, `formulario` fora da faixa, dois padrões, arquivo inexistente), verificando **linha e campo** do erro |
 | Respostas | Normalização (acentos, pontuação), colisão de chaves, tabela e blockquote do corpo |
 | Currículos | `.docx` gerado no teste com `python-docx`; PDF com texto; PDF sem texto → inválido |
-| Detecção | `detect_state(url, html)` com HTML salvo de cada estado em `tests/fixtures/pages/` |
+| Detecção | `detect_page_state(url, html)` com HTML salvo de cada estado em `tests/fixtures/pages/` |
 | Sessão | Playwright headless com `context.route("**/linkedin.com/**")` servindo as páginas fixture. Nunca acessa o LinkedIn de verdade |
 | CLI | `typer.testing.CliRunner` para `validar` (códigos de saída e textos principais) |
 
@@ -243,7 +243,7 @@ autoapply --verbose ...     # nível DEBUG no terminal
   *Pronto:* testes passam e os 3 CVs reais de `cv_base/` são lidos.
 - [x] **T6 — Comando `validar`.** Painel, tabelas e códigos de saída.
   *Pronto:* `uv run autoapply validar` com o `config.md` real mostra tudo OK.
-- [ ] **T7 — `session/detection.py`.** Estados por URL/DOM com fixtures HTML.
+- [x] **T7 — `session/detection.py`.** Estados por URL/DOM com fixtures HTML.
   *Pronto:* testes passam para os 4 estados.
 - [ ] **T8 — `session/browser.py` + `login`/`sessao`.** Contexto persistente, polling do login, `ensure_session()`, dump em `debug/`.
   *Pronto:* testes com rotas interceptadas passam, e o teste manual (login uma vez e `sessao` OK depois) funciona.
