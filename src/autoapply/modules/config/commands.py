@@ -79,17 +79,21 @@ def describe_ignored_resumes(resumes: list[Resume]) -> str | None:
     return f"[yellow]⚠ {ignored_count} currículos ignorados[/]"
 
 
-def validate(
-    config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
-) -> None:
+def load_valid_config(config_path: Path) -> Config:
     if not config_path.is_file():
         console.print(f"[red]✖ config.md não encontrado: {config_path}[/]")
         raise typer.Exit(INVALID_CONFIG_EXIT_CODE)
     try:
-        config = load_config(config_path)
+        return load_config(config_path)
     except ConfigError as error:
         console.print(build_issues_table(error.issues))
         raise typer.Exit(INVALID_CONFIG_EXIT_CODE) from error
+
+
+def validate(
+    config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
+) -> None:
+    config = load_valid_config(config_path)
     try:
         resumes = load_resumes(config)
     except DefaultResumeUnreadable as error:

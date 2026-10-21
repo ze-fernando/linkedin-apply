@@ -35,6 +35,6 @@ CREATE TABLE IF NOT EXISTS analyses (
 
 def open_database(database_path: Path) -> sqlite3.Connection:
     database_path.parent.mkdir(parents=True, exist_ok=True)
-    connection = sqlite3.connect(database_path)
+    connection = sqlite3.connect(database_path, autocommit=True)
     connection.executescript(SCHEMA)
     return connection

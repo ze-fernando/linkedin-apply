@@ -1,10 +1,12 @@
 import copy
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 import pytest
 
 from autoapply.modules.config.models import Busca
-from autoapply.modules.jobs.search_url import build_search_url
+from autoapply.modules.config.loader import parse_config_data
+from autoapply.modules.jobs.search_url import build_search_url, collect_search_terms
 
 
 @pytest.fixture
@@ -38,3 +40,14 @@ def test_build_search_url_maps_only_junior_level(busca: Busca) -> None:
 
     assert query["f_E"] == ["2"]
     assert query["f_TPR"] == ["r86400"]
+
+
+def test_collect_search_terms_joins_resume_searches_without_repeating(
+    valid_data: dict[str, object], base_dir: Path
+) -> None:
+    data = copy.deepcopy(valid_data)
+    data["curriculos"][0]["buscas"] = ["Desenvolvedor Python", "Back-end Python"]
+    data["curriculos"][1]["buscas"] = ["Analista de Dados", "desenvolvedor python"]
+    config = parse_config_data(data, base_dir)
+
+    assert collect_search_terms(config) == ["Desenvolvedor Python", "Back-end Python", "Analista de Dados"]

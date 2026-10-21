@@ -1,6 +1,6 @@
 from urllib.parse import urlencode
 
-from autoapply.modules.config.models import Busca
+from autoapply.modules.config.models import Busca, Config
 
 SEARCH_BASE_URL = "https://www.linkedin.com/jobs/search/"
 BRAZIL_GEO_ID = "106057199"
@@ -21,3 +21,11 @@ def build_search_url(term: str, busca: Busca) -> str:
         "f_E": ",".join(levels),
     }
     return f"{SEARCH_BASE_URL}?{urlencode(query)}"
+
+
+def collect_search_terms(config: Config) -> list[str]:
+    terms = {}
+    for curriculo in config.curriculos:
+        for term in curriculo.buscas:
+            terms.setdefault(term.casefold(), term)
+    return list(terms.values())

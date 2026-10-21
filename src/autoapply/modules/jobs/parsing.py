@@ -42,7 +42,7 @@ def parse_job_cards(html: str) -> list[JobCard]:
 
 
 def read_facts(tree: LexborHTMLParser) -> list[str]:
-    texts = [node.text(strip=True) for node in tree.css(DETAIL_FACTS_SELECTOR)]
+    texts = [" ".join(node.text(separator=" ").split()) for node in tree.css(DETAIL_FACTS_SELECTOR)]
     return [text for text in texts if text and text != FACT_SEPARATOR]
 
 

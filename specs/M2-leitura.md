@@ -126,18 +126,18 @@ CREATE TABLE IF NOT EXISTS analyses (
 1. Abre o navegador (headless por padrão; `--visivel` mostra a janela) e chama `ensure_session`. Se der `SessionExpired`, `CheckpointDetected` ou `UnknownPageState`, para e salva o dump em `debug/` (M1).
 2. **Termos:** a união das `buscas` de todos os currículos, sem repetir (hoje são 13).
 3. **URL** por termo (`search_url.py`, função pura): os filtros da seção 2, com `f_TPR` vindo de `busca.publicadas_ha_no_maximo_dias` e `f_E` vindo de `busca.niveis` (`junior` → 2; `pleno` → 3 e 4).
-4. **Lista:** rola a lista até carregar os 25 cards e lê de cada um `JobCard(id, title, company, location)`.
+4. **Lista:** logo após carregar, a página tem só ~7 itens; os outros chegam alguns segundos depois e cada card só renderiza quando rolado até a tela (o LinkedIn troca o `li` no meio da rolagem, por isso a leitura de cada card tenta até 3 vezes). O coletor lê cada item ao rolá-lo e espera a lista ficar 6 s sem crescer. Resultado: os 25 cards da página, cada um com `JobCard(id, title, company, location)`.
 5. **Filtros antes de abrir a vaga**, sobre o card (`filters.py`, funções puras):
    - ID já no banco → pula (não conta como nova);
    - `termos_bloqueados_no_titulo`, `empresas_bloqueadas` → `ignorada`, com o motivo.
-   - Exceção: um termo bloqueado não corta o título que também cita um nível configurado (ex.: "Pleno/Sênior", "Jr/Sr").
-   - Só cerca de 7 dos 25 cards vêm renderizados no início: é preciso rolar a lista até todos terem título.
+   - Exceção: um termo de **senioridade** bloqueado (Sênior, Senior, Sr, Especialista, Lead, Tech Lead, Principal, Staff) não corta o título que também cita um nível configurado (ex.: "Pleno/Sênior", "Jr/Sr"). "Estágio Júnior" e "Gerente Júnior" continuam bloqueados.
    - O local **não** é filtrado: vaga remota de fora do Brasil segue normalmente e o local aparece no `vaga.md`.
 6. **Detalhe:** clica no card, espera o painel com `currentJobId=<id>` e lê descrição, modalidade, data e o botão Easy Apply. Se não tiver "Candidatura simplificada" → `ignorada`. Se `palavras_bloqueadas` aparecerem na descrição → `ignorada`.
 7. Grava como `coletada`.
 8. **Ritmo (NFR-001):** espera aleatória de 3 a 15 s entre ações (clique, troca de termo). A espera é uma função injetável para os testes rodarem sem esperar.
-9. **Falhas:** a cada navegação roda `detect_page_state`. Um checkpoint interrompe tudo com dump. Se uma vaga não carregar, salva o dump e segue para a próxima (NFR-005).
-10. **Terminal:** barra de progresso por termo e, no fim, a tabela "termo · encontradas · novas · ignoradas".
+9. **Falhas:** a cada busca roda `detect_page_state`. Checkpoint ou login interrompem tudo (`CheckpointDetected`/`SessionExpired`) e o comando salva o dump. Se o painel de uma vaga não carregar em 15 s, salva o dump e segue para a próxima; essa vaga **não** é gravada, para ser tentada de novo na próxima execução (NFR-005).
+10. **Banco em autocommit:** cada vaga fica gravada na hora; interromper a coleta não perde o que já foi coletado.
+11. **Terminal:** status animado, uma linha de log por termo e, no fim, a tabela "termo · encontradas · novas · ignoradas".
 
 ## 7. Avaliação
 
@@ -234,7 +234,7 @@ O LinkedIn real e os LLMs reais **nunca** são chamados nos testes. Eles são va
 - [x] **T1 — Config do LLM.** Campos `llm` e `regras.analise_llm_max_vagas`, com validação e exibição no `validar`.
 - [x] **T2 — Banco.** `shared/database.py` e `jobs/store.py`.
 - [x] **T3 — URL, parsing e filtros.** Funções puras com fixtures.
-- [ ] **T4 — Coletor + `coletar`.** Playwright com rotas, ritmo, dump e tabela final. *Pronto:* testes passam e uma coleta real grava vagas.
+- [x] **T4 — Coletor + `coletar`.**** Playwright com rotas, ritmo, dump e tabela final. *Pronto:* testes passam e uma coleta real grava vagas.
 - [ ] **T5 — Pré-score e análise simplificada.**
 - [ ] **T6 — Provedores LLM.** claude CLI, opencode CLI, retry e fallback. *Pronto:* testes com executáveis falsos e uma análise real com `claude`.
 - [ ] **T7 — Avaliação.** Pipeline completo gravando `analyses`.

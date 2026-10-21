@@ -1,13 +1,16 @@
 import dataclasses
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse
 
 import docx
 import pytest
+from playwright.sync_api import BrowserContext, Request, Route
 from pypdf import PdfWriter
 
 from autoapply.modules.jobs.models import Job, JobStatus
+from autoapply.modules.session.browser import open_browser_context
 
 PAGES_DIR = Path(__file__).parent / "fixtures" / "pages"
 
@@ -214,3 +217,30 @@ def build_job() -> Callable[..., Job]:
         return dataclasses.replace(job, **overrides)
 
     return build
+
+
+@pytest.fixture
+def browser_context(tmp_path: Path) -> Iterator[BrowserContext]:
+    with open_browser_context(headless=True, profile_dir=tmp_path / "profile") as context:
+        yield context
+
+
+@pytest.fixture
+def serve_pages(browser_context: BrowserContext) -> Iterator[Callable[[dict[str, str]], None]]:
+    requested_urls = []
+    routed_urls = []
+
+    def serve(pages: dict[str, str]) -> None:
+        def handle(route: Route) -> None:
+            routed_urls.append(route.request.url)
+            path = urlparse(route.request.url).path
+            route.fulfill(status=200, content_type="text/html; charset=utf-8", body=pages.get(path, "<html></html>"))
+
+        browser_context.route("**/*", handle)
+
+    def record(request: Request) -> None:
+        requested_urls.append(request.url)
+
+    browser_context.on("request", record)
+    yield serve
+    assert set(requested_urls) <= set(routed_urls), "requisição escapou da rota e foi para a rede"

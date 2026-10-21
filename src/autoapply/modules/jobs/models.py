@@ -43,3 +43,11 @@ class JobDetail:
     workplace: str | None
     description: str
     has_easy_apply: bool
+
+
+@dataclass(frozen=True)
+class TermSummary:
+    term: str
+    found: int
+    new: int
+    ignored: int

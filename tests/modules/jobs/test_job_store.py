@@ -51,3 +51,15 @@ def test_update_job_status_changes_which_jobs_are_listed_by_status(
         assert [job.id for job in list_jobs(connection, status=JobStatus.COLLECTED)] == ["111"]
         assert [job.id for job in list_jobs(connection, status=JobStatus.AWAITING_RESUME)] == ["222"]
         assert [job.id for job in list_jobs(connection)] == ["111", "222"]
+
+
+def test_inserted_job_survives_connection_closed_without_commit(
+    tmp_path: Path, build_job: Callable[..., Job]
+) -> None:
+    database_path = tmp_path / "autoapply.db"
+    connection = open_database(database_path)
+    insert_job(connection, build_job())
+    connection.close()
+
+    with open_database(database_path) as reopened:
+        assert [job.id for job in list_jobs(reopened)] == ["4481248162"]

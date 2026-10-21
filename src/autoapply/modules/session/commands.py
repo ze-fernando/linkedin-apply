@@ -1,16 +1,26 @@
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 
 import typer
+from playwright.sync_api import BrowserContext
 from rich.panel import Panel
 
 from autoapply.modules.session.browser import (
+    ensure_session,
     open_browser_context,
     open_feed,
     read_page_state,
     save_debug_dump,
     wait_for_login,
 )
-from autoapply.modules.session.models import LoginTimeout, PageState
+from autoapply.modules.session.models import (
+    CheckpointDetected,
+    LoginTimeout,
+    PageState,
+    SessionExpired,
+    UnknownPageState,
+)
 from autoapply.shared.console import console
 from autoapply.shared.paths import BROWSER_PROFILE_DIR, DEBUG_DIR
 
@@ -59,3 +69,22 @@ def check_session_status(
         dump_dir = save_debug_dump(page, state, DEBUG_DIR)
     console.print(f"[yellow]⚠ Página inesperada ({state}). Screenshot e HTML salvos em {dump_dir}.[/]")
     raise typer.Exit(UNEXPECTED_PAGE_EXIT_CODE)
+
+
+@contextmanager
+def logged_in_browser(visible: bool) -> Iterator[BrowserContext]:
+    with open_browser_context(headless=not visible, profile_dir=BROWSER_PROFILE_DIR) as context:
+        try:
+            ensure_session(context)
+            yield context
+        except SessionExpired as error:
+            logger.error("sessão expirada em %s", error)
+            console.print("[red]✖ Sessão expirada, rode `autoapply login`.[/]")
+            raise typer.Exit(SESSION_EXPIRED_EXIT_CODE) from error
+        except (CheckpointDetected, UnknownPageState) as error:
+            page = context.pages[0]
+            state = read_page_state(page)
+            dump_dir = save_debug_dump(page, state, DEBUG_DIR)
+            logger.error("execução interrompida: %s em %s", state, error, extra={"event": "session.interrupted"})
+            console.print(f"[yellow]⚠ Execução interrompida ({state}). Screenshot e HTML salvos em {dump_dir}.[/]")
+            raise typer.Exit(UNEXPECTED_PAGE_EXIT_CODE) from error

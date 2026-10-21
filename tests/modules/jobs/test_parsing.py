@@ -45,3 +45,11 @@ def test_parse_job_detail_without_easy_apply_button_text(read_page: Callable[[st
     html = read_page("job_panel.html").replace("  Candidatura simplificada ", "Candidatar-se")
 
     assert parse_job_detail(html).has_easy_apply is False
+
+
+def test_parse_job_detail_separates_nested_texts_in_posted_date(read_page: Callable[[str], str]) -> None:
+    html = read_page("job_panel.html").replace(
+        "<span>há 5 dias</span>", "<span>Anunciada novamente</span><span>há 3 dias</span>"
+    )
+
+    assert parse_job_detail(html).posted == "Anunciada novamente há 3 dias"
