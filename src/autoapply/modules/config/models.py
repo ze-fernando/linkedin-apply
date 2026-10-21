@@ -1,4 +1,5 @@
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -168,3 +169,28 @@ class Config(StrictModel):
         if repeated:
             raise ValueError(f"nome de currículo repetido: {', '.join(repeated)}")
         return curriculos
+
+
+@dataclass(frozen=True)
+class ConfigIssue:
+    line: int | None
+    field: str
+    problem: str
+
+
+class ConfigError(Exception):
+    def __init__(self, issues: list[ConfigIssue]) -> None:
+        super().__init__(f"config.md inválido ({len(issues)} erros)")
+        self.issues = issues
+
+
+@dataclass(frozen=True)
+class MarkdownSection:
+    heading_line: int
+    lines: list[tuple[int, str]]
+
+
+@dataclass(frozen=True)
+class ParsedAnswers:
+    answers: dict[str, str]
+    issues: list[ConfigIssue]
