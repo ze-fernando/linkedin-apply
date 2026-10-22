@@ -69,31 +69,29 @@ app.command("pending", help="Mostra as perguntas sem resposta que travaram candi
 
 TUTORIAL = """[bold]Passo a passo do LinkedIn Auto-Apply[/]
 
-[bold]1. Instale[/]
-   uv sync
-   PLAYWRIGHT_BROWSERS_PATH=.playwright uv run playwright install chromium
+[bold]1. Instale e faça login (um comando só)[/]
+   make
+   Pergunta antes de começar, instala o uv, as dependências e o Chromium,
+   cria o config.md e a pasta cv_base/ e abre o navegador para você logar no LinkedIn.
+   A senha nunca é salva.
 
-[bold]2. Configure[/]
-   cp config.example.md config.md
+[bold]2. Preencha a configuração[/]
    Preencha o config.md com seus dados, buscas, salário, anos de experiência e respostas padrão.
    Coloque seus currículos em cv_base/ e marque um deles como padrao: true.
 
 [bold]3. Confira a configuração[/]
    uv run autoapply validate
 
-[bold]4. Faça login no LinkedIn (à mão; a senha nunca é salva)[/]
-   uv run autoapply login
-
-[bold]5. Simule antes de enviar (nada é enviado nem gravado)[/]
+[bold]4. Simule antes de enviar (nada é enviado nem gravado)[/]
    uv run autoapply run --simulate
    Os currículos ajustados da simulação ficam em debug/simulacao-cv/.
 
-[bold]6. Aplique de verdade[/]
+[bold]5. Aplique de verdade[/]
    uv run autoapply run
    Cada envio pergunta "Enviar? \\[y/N]". Com --auto, envia sem perguntar.
    Use --skip-collect para aplicar só nas vagas já avaliadas.
 
-[bold]7. Responda as perguntas que travaram vagas[/]
+[bold]6. Responda as perguntas que travaram vagas[/]
    uv run autoapply pending
    Responda na tabela de Respostas padrão do config.md; o próximo run tenta de novo.
    Ou rode com --interactive para responder na hora e salvar no config.md.

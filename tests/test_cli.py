@@ -4,9 +4,9 @@ from typer.testing import CliRunner
 from autoapply.main import app
 
 TUTORIAL_STEPS = [
-    "cp config.example.md config.md",
+    "make",
+    "config.md",
     "autoapply validate",
-    "autoapply login",
     "autoapply run --simulate",
     "autoapply run",
     "autoapply pending",

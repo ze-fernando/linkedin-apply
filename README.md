@@ -13,8 +13,18 @@ Ferramenta pessoal para encontrar vagas Easy Apply do LinkedIn (remotas, Brasil,
 ## Instalação
 
 ```bash
+make
+```
+
+O `make` mostra o que vai ser feito e pergunta se deseja continuar. Depois instala o uv (se faltar), as dependências e o Chromium do Playwright, cria o `config.md` a partir do `config.example.md` (se ainda não existir) e a pasta `cv_base/`, e abre o navegador para você fazer login no LinkedIn. Depois disso, falta só preencher o `config.md` e colocar os currículos em `cv_base/`.
+
+Sem `make`, os mesmos passos à mão:
+
+```bash
 uv sync
 PLAYWRIGHT_BROWSERS_PATH=.playwright uv run playwright install chromium
+cp config.example.md config.md
+uv run autoapply login
 ```
 
 O Chromium fica em `.playwright/` dentro do projeto. O `autoapply` usa essa pasta automaticamente quando a variável `PLAYWRIGHT_BROWSERS_PATH` não está definida.
