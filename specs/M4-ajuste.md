@@ -173,6 +173,7 @@ Nenhum teste chama um LLM real ou o LinkedIn.
 - [x] **T2 — Template e PDF.** `template.py` e `pdf.py`. *Pronto:* você aprova a prévia com dados fictícios.
 - [x] **T3 — Plano e checagem.** Provedores com schema por chamada, `prompt.py`, `plan.py` e `verification.py`.
 - [x] **T4 — Ajuste no `rodar`.** `tailor.py`, tabela `tailored_resumes`, pasta `curriculos-enviados/`, linhas e resumo. *Pronto:* `rodar --simular` gera PDFs de vagas reais e uma candidatura real vai com o PDF ajustado.
+- [ ] **T4.1 — Cidade e modo interativo.** Campo de cidade com autocomplete preenchido com `perfil.cidade`, escolhendo a sugestão cuja cidade (antes da vírgula) é igual à do perfil; sem sugestão igual, a vaga fica pendente. Flag `--interativo` no `rodar` e no `aplicar`: pergunta no terminal o que viraria pendente, pergunta de novo se a resposta não casa com as opções, Enter vazio deixa pendente, e uma resposta válida pode ser salva na tabela de Respostas padrão do `config.md` (`Salvar no config.md? [y/N]`). Resposta não salva vale até o fim da execução. *Pronto:* `rodar --simular --interativo` preenche a cidade na vaga real e uma pergunta respondida no terminal é salva no `config.md`.
 - [ ] **T5 — `relatorio`.**
 - [ ] **T6 — Fechamento.** README, PRD e `config.example.md`.
 
@@ -198,3 +199,4 @@ Confirmadas durante a T4:
 11. Cada provedor de LLM tem uma tentativa só, na análise e no ajuste: se falha, passa para o próximo. O desligamento após 3 falhas seguidas continua. Vale também para o M2.
 12. A confirmação de envio sem `--auto` passa a ser `Enviar? [y/N]` (aceita `y`, `yes`, `s` ou `sim`).
 13. O PDF ajustado é gerado num Chromium headless separado, aberto pelo mesmo Playwright do navegador da candidatura, então funciona também com `--visivel`.
+14. Campo de cidade (autocomplete) é preenchido com `perfil.cidade`; e a flag `--interativo` pergunta no terminal o que viraria pendente e oferece salvar no `config.md` (T4.1).

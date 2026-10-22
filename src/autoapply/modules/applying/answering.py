@@ -124,6 +124,8 @@ def find_profile_answer(field: FormField, context: AnswerContext) -> str | None:
         return re.sub(r"\D", "", perfil.ddd + perfil.celular)
     if field.kind == FieldKind.PHONE_COUNTRY:
         return find_country_option(field, perfil.telefone) or ""
+    if field.kind == FieldKind.LOCATION:
+        return perfil.cidade or None
     if field.kind == FieldKind.SELECT and any(term in label for term in EMAIL_LABEL_TERMS):
         return perfil.email
     if field.kind == FieldKind.TEXT and label in FIRST_NAME_LABELS:

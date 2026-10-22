@@ -21,6 +21,7 @@ class FieldKind(StrEnum):
     RADIO = "radio"
     PHONE = "telefone"
     PHONE_COUNTRY = "codigo_pais"
+    LOCATION = "cidade"
     UNKNOWN = "desconhecido"
 
 
@@ -45,6 +46,7 @@ class AnswerSource(StrEnum):
     RULE = "regra"
     LINKEDIN = "LinkedIn"
     GENERIC = "resposta genérica"
+    USER = "você"
 
 
 class AttemptOutcome(StrEnum):

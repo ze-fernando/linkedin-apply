@@ -6,19 +6,24 @@ from pathlib import Path
 
 import typer
 from playwright.sync_api import BrowserContext
+from rich.markup import escape
 from rich.status import Status
 from rich.table import Table
 
+from autoapply.modules.applying.answering import decide_with_answer
 from autoapply.modules.applying.easy_apply import apply_to_job
 from autoapply.modules.applying.job_answers import load_job_answers
 from autoapply.modules.applying.job_folders import check_folder_resume, migrate_job_folders
 from autoapply.modules.applying.models import (
     AnswerContext,
+    AnswerSource,
+    DecisionAction,
     ApplicationCandidate,
     ApplicationOutcome,
     ApplicationResult,
     ApplyMode,
     FolderJob,
+    FormField,
     PendingGroup,
     RunEntry,
     RunSummary,
@@ -27,6 +32,7 @@ from autoapply.modules.applying.pending import group_pending_questions
 from autoapply.modules.applying.runner import run_applications
 from autoapply.modules.applying.selection import find_job_for_argument, select_normal_candidates, select_ready_jobs
 from autoapply.modules.applying.store import count_applied_on
+from autoapply.modules.config.answers import add_config_answer, normalize_question
 from autoapply.modules.config.commands import load_valid_config, load_valid_resumes
 from autoapply.modules.config.models import Config, ConfigError
 from autoapply.modules.jobs.commands import run_collection
@@ -202,6 +208,55 @@ def ask_submit_confirmation(job: Job, answers: list[tuple[str, str]], status: St
     return confirmed
 
 
+def describe_field(field: FormField) -> str:
+    options = f"; opções: {', '.join(field.options)}" if field.options else ""
+    return f"{field.label} ({field.kind}{options})"
+
+
+def ask_field_answer(job: Job, field: FormField, status: Status) -> str | None:
+    status.stop()
+    console.print(f"[yellow]? Pergunta sem resposta:[/] {escape(job.company)} · {escape(job.title)}")
+    console.print(f"  {escape(describe_field(field))}")
+    answer = console.input("Resposta (Enter deixa a vaga pendente): ").strip()
+    status.start()
+    return answer or None
+
+
+def ask_save_answer(field: FormField, answer: str, status: Status, config_path: Path) -> None:
+    status.stop()
+    if console.input(f"Salvar no {config_path}? \\[y/N] ").strip().casefold() in CONFIRM_ANSWERS:
+        add_config_answer(config_path, field.label, answer)
+        console.print(f"[green]✔ Resposta salva em {config_path}.[/]")
+    status.start()
+
+
+def build_ask_field(
+    interactive: bool, status: Status, config_path: Path
+) -> Callable[[Job, FormField], str | None]:
+    run_answers = {}
+    reused = set()
+
+    def ask_field(job: Job, field: FormField) -> str | None:
+        if not interactive:
+            return None
+        question = normalize_question(field.label)
+        if question in run_answers and (job.id, field.element_id) not in reused:
+            reused.add((job.id, field.element_id))
+            return run_answers[question]
+        answer = ask_field_answer(job, field, status)
+        if answer is None:
+            return None
+        decision = decide_with_answer(field, answer, AnswerSource.USER)
+        if decision.action != DecisionAction.FILL:
+            console.print(f"[red]✖ {escape(decision.reason or '')}[/]")
+            return answer
+        run_answers[question] = answer
+        ask_save_answer(field, answer, status, config_path)
+        return answer
+
+    return ask_field
+
+
 def describe_run_mode(simulate: bool, auto: bool) -> str:
     if simulate:
         return "[blue]Modo simulação: nada é enviado nem gravado no banco.[/]"
@@ -242,6 +297,8 @@ def execute_run(
     auto: bool,
     visible: bool,
     tailor_resumes: bool = False,
+    interactive: bool = False,
+    config_path: Path = CONFIG_FILE,
 ) -> RunSummary:
     console.print(describe_run_mode(simulate, auto))
     with ExitStack() as stack:
@@ -252,6 +309,8 @@ def execute_run(
         if tailor_resumes:
             tailor = build_tailor(connection, config, stack.enter_context(open_pdf_context(context)))
         pdf_dir = SIMULATED_RESUMES_DIR if simulate else TAILORED_RESUMES_DIR
+
+        ask_field = build_ask_field(interactive, status, config_path)
 
         def confirm_submit(job: Job, answers: list[tuple[str, str]]) -> bool:
             return auto or ask_submit_confirmation(job, answers, status)
@@ -267,6 +326,7 @@ def execute_run(
                 answer_context,
                 simulate,
                 confirm_submit,
+                ask_field,
                 pause_between_steps,
                 DEBUG_DIR,
             )
@@ -304,6 +364,9 @@ def apply(
     argument: str | None = typer.Argument(None, metavar="VAGA", help="ID da vaga ou nome da pasta em vagas/."),
     ready: bool = typer.Option(False, "--prontas", help="Aplica nas vagas com currículo na pasta."),
     auto: bool = typer.Option(False, "--auto", help="Envia sem pedir confirmação."),
+    interactive: bool = typer.Option(
+        False, "--interativo", help="Pergunta no terminal o que não souber responder e oferece salvar no config.md."
+    ),
     simulate: bool = typer.Option(False, "--simular", help="Percorre o formulário sem enviar."),
     visible: bool = typer.Option(False, "--visivel", help="Abre o navegador visível."),
     config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
@@ -317,7 +380,17 @@ def apply(
         if not candidates:
             console.print("Nenhuma vaga pronta para aplicar.")
             return
-        summary = execute_run(connection, config, candidates, ApplyMode.SEARCH, simulate, auto, visible)
+        summary = execute_run(
+            connection,
+            config,
+            candidates,
+            ApplyMode.SEARCH,
+            simulate,
+            auto,
+            visible,
+            interactive=interactive,
+            config_path=config_path,
+        )
     show_run_summary(summary)
 
 
@@ -333,6 +406,9 @@ def collect_and_evaluate(connection: sqlite3.Connection, config: Config, visible
 
 def run(
     auto: bool = typer.Option(False, "--auto", help="Envia sem pedir confirmação."),
+    interactive: bool = typer.Option(
+        False, "--interativo", help="Pergunta no terminal o que não souber responder e oferece salvar no config.md."
+    ),
     skip_collection: bool = typer.Option(
         False, "--sem-coleta", help="Pula a coleta e a avaliação e aplica nas vagas já avaliadas."
     ),
@@ -362,6 +438,8 @@ def run(
             auto,
             visible,
             config.regras.ajuste_cv_ia,
+            interactive,
+            config_path,
         )
     show_run_summary(summary)
 

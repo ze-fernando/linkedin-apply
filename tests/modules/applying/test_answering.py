@@ -254,3 +254,14 @@ def test_resolve_field_without_known_technology_in_the_question_stays_pending(
     field = build_field(kind, label, options=options)
 
     assert resolve_field(field, build_context(experience=KEYWORD_EXPERIENCE)).action == DecisionAction.PENDING
+
+
+def test_resolve_field_fills_the_city_autocomplete_from_the_profile(
+    build_context: Callable[..., AnswerContext],
+) -> None:
+    context = build_context()
+
+    assert resolve_field(build_field(FieldKind.LOCATION, "Location (city)"), context) == from_profile("São Paulo")
+    assert resolve_field(build_field(FieldKind.LOCATION, "Cidade", value="Campinas, SP"), context) == (
+        keep_from_linkedin("Campinas, SP")
+    )

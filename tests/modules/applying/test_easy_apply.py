@@ -7,11 +7,12 @@ import pytest
 from playwright.sync_api import BrowserContext, Page
 
 from autoapply.modules.applying.easy_apply import apply_to_job
-from autoapply.modules.applying.models import AnswerContext, ApplicationOutcome, ApplicationResult
+from autoapply.modules.applying.models import AnswerContext, ApplicationOutcome, ApplicationResult, FormField
 from autoapply.modules.config.loader import parse_config_data
 from autoapply.modules.jobs.models import Job
 from tests.fakes.linkedin_easy_apply import (
     ELEMENT_ID,
+    LOCATION_ID,
     REVIEW_BUTTON,
     SELECT_ID,
     SUBMIT_BUTTON,
@@ -19,6 +20,7 @@ from tests.fakes.linkedin_easy_apply import (
     FakeStep,
     build_apply_page,
     follow_company,
+    location_field,
     radio_field,
     resume_upload,
     select_field,
@@ -56,6 +58,7 @@ def run_application(
         application: FakeApplication,
         simulate: bool = False,
         confirm_submit: Callable[[Job, list[tuple[str, str]]], bool] = lambda job, answers: True,
+        ask_field: Callable[[Job, FormField], str | None] = lambda job, field: None,
     ) -> tuple[ApplicationResult, dict[str, object], Page]:
         serve_pages({"/jobs/search/": build_apply_page(application)})
         page = browser_context.pages[0]
@@ -66,6 +69,7 @@ def run_application(
             context,
             simulate=simulate,
             confirm_submit=confirm_submit,
+            ask_field=ask_field,
             wait=lambda: None,
             debug_dir=tmp_path / "debug",
             timeout_ms=2000,
@@ -290,4 +294,85 @@ def test_apply_to_job_step_without_action_button_fails_and_discards(
     result, log, _ = run_application(application)
 
     assert (result.outcome, result.reason) == (ApplicationOutcome.FAILED, "etapa sem botão de avançar ou enviar")
+    assert (log["submitted"], log["discarded"]) == (False, True)
+
+
+def location_application(suggestions: list[str]) -> FakeApplication:
+    return FakeApplication(
+        job_id=JOB_ID,
+        steps=[
+            FakeStep("Additional Questions", location_field("cidade", "Location (city)", suggestions), REVIEW_BUTTON),
+            FakeStep("Revise sua candidatura", follow_company(), SUBMIT_BUTTON),
+        ],
+    )
+
+
+def test_apply_to_job_types_the_city_and_picks_the_matching_suggestion(
+    run_application: Callable[..., tuple[ApplicationResult, dict[str, object], Page]],
+) -> None:
+    suggestions = ["Sao Paulo de Olivenca, Amazonas, Brasil", "São Paulo, São Paulo, Brasil"]
+
+    result, log, _ = run_application(location_application(suggestions))
+
+    assert result.outcome == ApplicationOutcome.APPLIED
+    assert log["values"] == {LOCATION_ID.format("cidade"): "São Paulo, São Paulo, Brasil"}
+
+
+def test_apply_to_job_without_a_matching_city_suggestion_leaves_the_job_pending(
+    run_application: Callable[..., tuple[ApplicationResult, dict[str, object], Page]],
+) -> None:
+    result, log, _ = run_application(location_application(["Salvador, Bahia, Brasil"]))
+
+    assert (result.outcome, result.reason) == (ApplicationOutcome.PENDING, "cidade 'São Paulo' fora das sugestões")
+    assert [field.label for field in result.pending_fields] == ["Location (city)"]
+    assert (log["submitted"], log["discarded"]) == (False, True)
+
+
+AWS_QUESTION = "How many years of work experience do you have with AWS?"
+
+
+def unanswered_application() -> FakeApplication:
+    return FakeApplication(
+        job_id=JOB_ID,
+        steps=[
+            FakeStep(
+                "Perguntas adicionais",
+                text_field("aws-numeric", AWS_QUESTION) + radio_field("cnh", "Possui CNH?", ["Sim", "Não"]),
+                REVIEW_BUTTON,
+            ),
+            FakeStep("Revise sua candidatura", follow_company(), SUBMIT_BUTTON),
+        ],
+    )
+
+
+def build_ask_field(answers: dict[str, list[str | None]], asked: list[str]) -> Callable[[Job, FormField], str | None]:
+    def ask_field(job: Job, field: FormField) -> str | None:
+        asked.append(field.label)
+        return answers[field.label].pop(0)
+
+    return ask_field
+
+
+def test_apply_to_job_asks_the_unanswered_fields_and_asks_again_when_the_answer_is_not_an_option(
+    run_application: Callable[..., tuple[ApplicationResult, dict[str, object], Page]],
+) -> None:
+    asked = []
+    ask_field = build_ask_field({AWS_QUESTION: ["2"], "Possui CNH?": ["Talvez", "sim"]}, asked)
+
+    result, log, _ = run_application(unanswered_application(), ask_field=ask_field)
+
+    assert result.outcome == ApplicationOutcome.APPLIED
+    assert asked == [AWS_QUESTION, "Possui CNH?", "Possui CNH?"]
+    assert log["values"] == {ELEMENT_ID.format("aws-numeric"): "2", "radio-cnh": "Sim"}
+
+
+def test_apply_to_job_keeps_pending_the_fields_left_without_answer(
+    run_application: Callable[..., tuple[ApplicationResult, dict[str, object], Page]],
+) -> None:
+    ask_field = build_ask_field({AWS_QUESTION: ["2"], "Possui CNH?": [None]}, [])
+
+    result, log, _ = run_application(unanswered_application(), ask_field=ask_field)
+
+    assert result.outcome == ApplicationOutcome.PENDING
+    assert [field.label for field in result.pending_fields] == ["Possui CNH?"]
     assert (log["submitted"], log["discarded"]) == (False, True)

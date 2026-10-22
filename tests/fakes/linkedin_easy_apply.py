@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass, field
 from html import escape
 from pathlib import Path
@@ -29,6 +30,9 @@ const validateStep = () => {
     const select = container.querySelector("select");
     const radios = [...container.querySelectorAll("input[type=radio]")];
     if (input && input.required && !input.value) { showError(container, "Enter a valid answer"); valid = false; }
+    if (input && input.dataset.suggestions && input.value && input.dataset.chosen !== "true") {
+      showError(container, "Please make a selection"); valid = false;
+    }
     if (input && input.id.endsWith("-numeric") && input.value && !/^\\d{1,2}$/.test(input.value)) {
       showError(container, "Enter a whole number between 0 and 99"); valid = false;
     }
@@ -46,6 +50,27 @@ const recordValues = () => {
     window.__log.values[element.name] = element.getAttribute("data-test-text-selectable-option__input");
   }
 };
+document.addEventListener("input", (event) => {
+  const input = event.target;
+  if (input.getAttribute("role") !== "combobox" || !input.dataset.suggestions) return;
+  input.dataset.chosen = "";
+  const box = input.parentElement;
+  setTimeout(() => {
+    box.querySelector("[role=listbox]")?.remove();
+    const options = JSON.parse(input.dataset.suggestions)
+      .map((text) => `<div role="option" class="basic-typeahead__selectable"><span>${text}</span></div>`).join("");
+    box.insertAdjacentHTML("beforeend", `<div role="listbox">${options}</div>`);
+  }, 50);
+});
+document.addEventListener("click", (event) => {
+  const option = event.target.closest("[role=option]");
+  if (!option) return;
+  const box = option.closest("[role=listbox]").parentElement;
+  const input = box.querySelector("input[role=combobox]");
+  input.value = option.textContent.trim();
+  input.dataset.chosen = "true";
+  option.closest("[role=listbox]").remove();
+});
 document.addEventListener("change", (event) => {
   if (event.target.type === "file") window.__log.uploaded = event.target.files[0].name;
 });
@@ -95,6 +120,7 @@ SUBMIT_BUTTON = '<button aria-label="Enviar candidatura" data-live-test-easy-app
 ELEMENT_ID = "single-line-text-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-9000-{}"
 SELECT_ID = "text-entity-list-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-9000-{}"
 RADIO_ID = "radio-button-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-9000-{}"
+LOCATION_ID = "single-typeahead-entity-form-component-formElement-urn-li-jobs-applyformcommon-easyApplyFormElement-9000-{}-location-GEO-LOCATION"
 RESUME_INPUT_ID = "jobs-document-upload-file-input-upload-resume-urn:li:fsu_jobApplicationFileUploadFormElement:(9000,1,document)"
 
 
@@ -150,6 +176,20 @@ def typeahead_field(suffix: str, label: str) -> str:
     <div class="fb-dash-form-element" data-test-form-element="">
       <label for="{element_id}">{escape(label)}</label>
       <input id="{element_id}" role="combobox" aria-required="true" type="text">
+    </div>"""
+
+
+def location_field(suffix: str, label: str, suggestions: list[str]) -> str:
+    element_id = LOCATION_ID.format(suffix)
+    return f"""
+    <div class="fb-dash-form-element mt4" data-test-form-element="">
+      <div class="relative " data-test-single-typeahead-entity-form-component="">
+        <label for="{element_id}" data-test-single-typeahead-entity-form-title="true"><span>{escape(label)}</span></label>
+        <div id="{element_id}-ta" class="search-basic-typeahead search-vertical-typeahead">
+          <input id="{element_id}" class="basic-input " required="" role="combobox" aria-autocomplete="list"
+            aria-expanded="false" type="text" data-suggestions="{escape(json.dumps(suggestions))}">
+        </div>
+      </div>
     </div>"""
 
 

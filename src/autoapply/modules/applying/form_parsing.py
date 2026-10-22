@@ -12,6 +12,7 @@ RADIO_OPTION_ATTRIBUTE = "data-test-text-selectable-option__input"
 NUMBER_ID_SUFFIX = "-numeric"
 PHONE_ID_MARKER = "phoneNumber-nationalNumber"
 PHONE_COUNTRY_ID_MARKER = "phoneNumber-country"
+LOCATION_TYPEAHEAD_SELECTOR = "[data-test-single-typeahead-entity-form-component]"
 RESUME_UPLOAD_SELECTOR = 'input[type="file"][id*="upload-resume"]'
 FOLLOW_COMPANY_SELECTOR = "#follow-company-checkbox"
 ERROR_MESSAGE_SELECTOR = ".artdeco-inline-feedback--error .artdeco-inline-feedback__message"
@@ -51,11 +52,11 @@ def find_text_kind(element_id: str) -> FieldKind:
     return FieldKind.TEXT
 
 
-def parse_text_input(container: LexborNode, element: LexborNode) -> FormField:
+def parse_text_input(container: LexborNode, element: LexborNode, kind: FieldKind | None = None) -> FormField:
     element_id = element.attributes.get("id") or ""
     return FormField(
         element_id=element_id,
-        kind=find_text_kind(element_id),
+        kind=kind or find_text_kind(element_id),
         label=find_label(container, element_id),
         required=is_required(element),
         value=read_current_value(element),
@@ -149,6 +150,8 @@ def parse_field(container: LexborNode) -> FormField | None:
         return None
     if is_plain_text_input(element):
         return parse_text_input(container, element)
+    if container.css_first(LOCATION_TYPEAHEAD_SELECTOR) is not None and element.attributes.get("role") == "combobox":
+        return parse_text_input(container, element, FieldKind.LOCATION)
     return parse_unknown_input(container, element)
 
 

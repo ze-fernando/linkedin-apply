@@ -102,10 +102,23 @@ def test_parse_form_step_marks_textarea_as_free_text_and_unsupported_fields_as_u
 
     assert [(field.kind, field.label, field.required) for field in step.fields] == [
         (FieldKind.FREE_TEXT, "¿Por qué quieres trabajar con nosotros?", True),
-        (FieldKind.UNKNOWN, "Cidade", True),
+        (FieldKind.LOCATION, "Cidade", True),
         (FieldKind.UNKNOWN, "Quais tecnologias você usa?", False),
         (FieldKind.UNKNOWN, "Carta de apresentação", True),
     ]
+
+
+def test_parse_form_step_reads_the_city_autocomplete_as_location(read_page: Callable[[str], str]) -> None:
+    step = parse_form_step(read_page("easy_apply_location.html"))
+
+    [field] = step.fields
+    assert (field.kind, field.label, field.required, field.value) == (
+        FieldKind.LOCATION,
+        "Location (city)",
+        True,
+        None,
+    )
+    assert field.element_id.endswith("easyApplyFormElement-5000-51-location-GEO-LOCATION")
 
 
 def test_parse_form_step_detects_resume_upload_and_next_button(read_page: Callable[[str], str]) -> None:

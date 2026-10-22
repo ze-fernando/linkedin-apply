@@ -7,7 +7,7 @@ from pathlib import Path
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Page
 
-from autoapply.modules.applying.answering import resolve_field
+from autoapply.modules.applying.answering import decide_with_answer, resolve_field
 from autoapply.modules.applying.form_parsing import (
     ACTION_SELECTORS,
     FOLLOW_COMPANY_SELECTOR,
@@ -16,6 +16,7 @@ from autoapply.modules.applying.form_parsing import (
 )
 from autoapply.modules.applying.models import (
     AnswerContext,
+    AnswerSource,
     ApplicationOutcome,
     ApplicationResult,
     DecisionAction,
@@ -28,6 +29,7 @@ from autoapply.modules.applying.models import (
 from autoapply.modules.jobs.collector import ensure_page_is_usable
 from autoapply.modules.jobs.models import Job
 from autoapply.modules.session.browser import read_page_state, save_debug_dump
+from autoapply.shared.text import normalize_text
 
 SEARCH_JOB_URL = "https://www.linkedin.com/jobs/search/?currentJobId={job_id}"
 PANEL_READY_SELECTOR = '.job-details-jobs-unified-top-card__job-title a[href*="/jobs/view/{job_id}/"]'
@@ -43,6 +45,9 @@ SUCCESS_PATTERN = (
     r"candidatura .{0,150}foi enviada|candidatura enviada|application .{0,150}was sent|solicitud .{0,150}enviada"
 )
 MAX_STEPS = 12
+SUGGESTION_SELECTOR = '[role="listbox"] [role="option"]'
+SUGGESTION_POLL_MS = 250
+TYPING_DELAY_MS = 50
 TEXT_KINDS = {FieldKind.TEXT, FieldKind.NUMBER, FieldKind.PHONE, FieldKind.FREE_TEXT}
 SELECT_KINDS = {FieldKind.SELECT, FieldKind.PHONE_COUNTRY}
 ANSWERED_ACTIONS = {DecisionAction.FILL, DecisionAction.KEEP}
@@ -92,7 +97,30 @@ def read_current_step(page: Page) -> FormStep:
     return parse_form_step(page.locator(MODAL_SELECTOR).first.evaluate(SYNC_FORM_STATE_SCRIPT))
 
 
-def fill_field(page: Page, field: FormField, value: str) -> None:
+def find_suggestion_index(texts: list[str], city: str) -> int | None:
+    wanted = normalize_text(city).strip()
+    return next(
+        (index for index, text in enumerate(texts) if normalize_text(text.split(",")[0]).strip() == wanted), None
+    )
+
+
+def fill_location(page: Page, field: FormField, city: str, timeout_ms: int) -> str | None:
+    element = page.locator(element_selector(field.element_id))
+    element.fill("")
+    element.press_sequentially(city, delay=TYPING_DELAY_MS)
+    suggestions = page.locator(SUGGESTION_SELECTOR)
+    for _ in range(max(timeout_ms // SUGGESTION_POLL_MS, 1)):
+        page.wait_for_timeout(SUGGESTION_POLL_MS)
+        index = find_suggestion_index(suggestions.all_inner_texts(), city)
+        if index is not None:
+            suggestions.nth(index).click()
+            return None
+    return f"cidade '{city}' fora das sugestões"
+
+
+def fill_field(page: Page, field: FormField, value: str, timeout_ms: int) -> str | None:
+    if field.kind == FieldKind.LOCATION:
+        return fill_location(page, field, value, timeout_ms)
     if field.kind in TEXT_KINDS:
         page.locator(element_selector(field.element_id)).fill(value)
     elif field.kind in SELECT_KINDS:
@@ -113,10 +141,16 @@ def log_decision(field: FormField, decision: FieldDecision) -> None:
     )
 
 
-def fill_step(page: Page, decisions: list[tuple[FormField, FieldDecision]]) -> None:
+def fill_step(
+    page: Page, decisions: list[tuple[FormField, FieldDecision]], timeout_ms: int
+) -> list[tuple[FormField, str]]:
+    problems = []
     for field, decision in decisions:
         if decision.action == DecisionAction.FILL and decision.value != field.value:
-            fill_field(page, field, decision.value)
+            problem = fill_field(page, field, decision.value, timeout_ms)
+            if problem is not None:
+                problems.append((field, problem))
+    return problems
 
 
 def prepare_step(page: Page, step: FormStep, resume_file: Path) -> None:
@@ -185,6 +219,17 @@ def open_application(page: Page, job: Job, timeout_ms: int) -> ApplicationResult
     return None
 
 
+def ask_until_valid(
+    job: Job, field: FormField, decision: FieldDecision, ask_field: Callable[[Job, FormField], str | None]
+) -> FieldDecision:
+    while decision.action == DecisionAction.PENDING:
+        answer = ask_field(job, field)
+        if answer is None:
+            return decision
+        decision = decide_with_answer(field, answer, AnswerSource.USER)
+    return decision
+
+
 def list_answers(decisions: list[tuple[FormField, FieldDecision]]) -> list[tuple[str, str]]:
     return [
         (field.label, decision.value)
@@ -200,6 +245,7 @@ def apply_to_job(
     context: AnswerContext,
     simulate: bool,
     confirm_submit: Callable[[Job, list[tuple[str, str]]], bool],
+    ask_field: Callable[[Job, FormField], str | None],
     wait: Callable[[], None],
     debug_dir: Path,
     timeout_ms: int = 15000,
@@ -212,7 +258,9 @@ def apply_to_job(
         step = read_current_step(page)
         if step.errors:
             return fail(page, f"erro de validação: {'; '.join(step.errors)}", debug_dir, timeout_ms)
-        decisions = [(field, resolve_field(field, context)) for field in step.fields]
+        decisions = [
+            (field, ask_until_valid(job, field, resolve_field(field, context), ask_field)) for field in step.fields
+        ]
         for field, decision in decisions:
             log_decision(field, decision)
         failure = next((decision for _, decision in decisions if decision.action == DecisionAction.FAIL), None)
@@ -222,7 +270,11 @@ def apply_to_job(
         if pending_fields:
             discard_application(page, timeout_ms)
             return result(ApplicationOutcome.PENDING, "perguntas sem resposta", pending_fields)
-        fill_step(page, decisions)
+        unfilled = fill_step(page, decisions, timeout_ms)
+        if unfilled:
+            discard_application(page, timeout_ms)
+            reason = "; ".join(problem for _, problem in unfilled)
+            return result(ApplicationOutcome.PENDING, reason, [field for field, _ in unfilled])
         answers.extend(list_answers(decisions))
         prepare_step(page, step, resume_file)
         if step.action is None:
