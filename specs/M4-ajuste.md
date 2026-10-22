@@ -2,19 +2,19 @@
 
 **Status:** Aprovado · **Atualizado:** 2026-10-22
 **PRD:** [../PRD.md](../PRD.md) — História 4.2 (ajuste automático do currículo), FR-010 (histórico e relatório), FR-011 (ajuste sem inventar informação), risco "A IA inventa informação no currículo"
-**Base:** [M2-leitura.md](M2-leitura.md) (provedores de LLM, análise) e [M3-aplicacao.md](M3-aplicacao.md) (motor do Easy Apply, `rodar`, histórico de tentativas)
+**Base:** [M2-leitura.md](M2-leitura.md) (provedores de LLM, análise) e [M3-aplicacao.md](M3-aplicacao.md) (motor do Easy Apply, `run`, histórico de tentativas)
 
 ## 1. Objetivo
 
-1. No `rodar`, com `regras.ajuste_cv_ia: true`, gerar para cada vaga um currículo em PDF ajustado à vaga, a partir do currículo base escolhido na análise, e enviar esse PDF.
+1. No `run`, com `regras.ajuste_cv_ia: true`, gerar para cada vaga um currículo em PDF ajustado à vaga, a partir do currículo base escolhido na análise, e enviar esse PDF.
 2. O ajuste só reescreve o Resumo Profissional e reordena bullets e competências. Uma checagem automática descarta o ajuste se aparecer algo que não está no currículo base, e aí vai o currículo base.
-3. Comando `relatorio` com o histórico das candidaturas: resumo por período, lista, taxa de conclusão e exportação em CSV.
+3. Comando `report` com o histórico das candidaturas: resumo por período, lista, taxa de conclusão e exportação em CSV.
 
 **Pronto quando:**
 
 - Você aprova o template pela prévia com dados fictícios.
-- Um `rodar --simular` com o ajuste ligado gera os PDFs de vagas reais, e o texto deles é legível (extraível) como o de um currículo comum.
-- Uma candidatura real é enviada com o PDF ajustado e aparece no `relatorio`.
+- Um `run --simulate` com o ajuste ligado gera os PDFs de vagas reais, e o texto deles é legível (extraível) como o de um currículo comum.
+- Uma candidatura real é enviada com o PDF ajustado e aparece no `report`.
 
 **Fora do M4:** ajuste no modo busca (você continua adaptando à mão), reescrita do texto dos bullets e agendamento.
 
@@ -54,7 +54,7 @@ src/autoapply/modules/
 │   └── tailor.py          # orquestra: estrutura → LLM → plano → checagem → PDF
 ├── reporting/
 │   ├── report.py          # consultas e números do relatório (funções puras sobre o banco)
-│   └── commands.py        # `relatorio`
+│   └── commands.py        # `report`
 └── matching/
     └── providers.py       # passa a aceitar schema e leitor de resultado por chamada
 ```
@@ -125,9 +125,9 @@ Descartado o ajuste, a vaga é aplicada com o currículo base, e a linha do term
 ### 5.5 Arquivos
 
 - PDF enviado: `curriculos-enviados/AAAA-MM-DD-empresa-cargo.pdf` (mesmo slug das pastas do modo busca), fora do git.
-- No `--simular`: o PDF é gerado em `debug/simulacao-cv/` e nada é gravado no banco, como no resto da simulação (decisão 7).
+- No `--simulate`: o PDF é gerado em `debug/simulacao-cv/` e nada é gravado no banco, como no resto da simulação (decisão 7).
 
-## 6. Integração com o `rodar`
+## 6. Integração com o `run`
 
 1. Para cada candidata, antes de abrir o formulário: com `ajuste_cv_ia: true` e currículo base `.docx`, roda o ajuste (seção 5). O currículo enviado é o PDF ajustado ou o base.
 2. A linha da vaga mostra qual foi: `cv ajustado (curriculos-enviados/...pdf)` ou `cv_base/dotnet.docx · ajuste descartado: <motivo>`.
@@ -135,13 +135,13 @@ Descartado o ajuste, a vaga é aplicada com o currículo base, e a linha do term
 4. O ajuste roda só para vagas que vão ser tentadas: respeita o limite diário e não gasta LLM em vaga já aplicada.
 5. Vaga `pendente_pergunta` que volta na próxima execução reaproveita o PDF já gerado (`tailored_resumes` com status `usado`).
 
-## 7. Comando `relatorio`
+## 7. Comando `report`
 
 ```
-autoapply relatorio [--dias N] [--csv <arquivo>]
+autoapply report [--days N] [--csv <arquivo>]
 ```
 
-- Período: últimos `N` dias, padrão 7; `--dias 0` mostra tudo.
+- Período: últimos `N` dias, padrão 7; `--days 0` mostra tudo.
 - **Resumo:** tabela com aplicadas, já aplicadas, pendentes, falhas e simuladas não entram (não ficam no banco), separadas por modo (busca e normal), mais as vagas ignoradas no período (pela data de coleta).
 - **Taxa de conclusão:** aplicadas ÷ (aplicadas + falhas + pendentes), e os 3 motivos de falha mais comuns.
 - **Lista:** data, modo, resultado, empresa, cargo, score, currículo enviado (base ou ajustado) e link da vaga, mais recentes primeiro.
@@ -151,7 +151,7 @@ autoapply relatorio [--dias N] [--csv <arquivo>]
 ## 8. Terminal
 
 - Durante o ajuste, o status mostra "Ajustando currículo para <empresa>...".
-- A tabela-resumo do `rodar` ganha a linha "Currículos ajustados: X usados, Y descartados".
+- A tabela-resumo do `run` ganha a linha "Currículos ajustados: X usados, Y descartados".
 
 ## 9. Testes
 
@@ -162,7 +162,7 @@ autoapply relatorio [--dias N] [--csv <arquivo>]
 | Template | HTML com escape, todas as seções e a ordem do plano aplicada |
 | PDF | Chromium headless gera o PDF de um currículo fictício, e o texto extraído contém nome, seções e bullets |
 | Provedores | Os executáveis `claude` e `opencode` falsos do M2 com o schema do plano |
-| Integração | Runner com ajuste falso: PDF usado, ajuste descartado volta ao base, `--simular` não grava, reaproveitamento do PDF |
+| Integração | Runner com ajuste falso: PDF usado, ajuste descartado volta ao base, `--simulate` não grava, reaproveitamento do PDF |
 | Relatório | Banco temporário: contagens por período e modo, taxa, motivos, última tentativa por vaga e CSV |
 
 Nenhum teste chama um LLM real ou o LinkedIn.
@@ -172,9 +172,9 @@ Nenhum teste chama um LLM real ou o LinkedIn.
 - [x] **T1 — Estrutura do CV.** `models.py` e `resume_structure.py`. *Pronto:* os três `.docx` do `cv_base/` são lidos sem erro.
 - [x] **T2 — Template e PDF.** `template.py` e `pdf.py`. *Pronto:* você aprova a prévia com dados fictícios.
 - [x] **T3 — Plano e checagem.** Provedores com schema por chamada, `prompt.py`, `plan.py` e `verification.py`.
-- [x] **T4 — Ajuste no `rodar`.** `tailor.py`, tabela `tailored_resumes`, pasta `curriculos-enviados/`, linhas e resumo. *Pronto:* `rodar --simular` gera PDFs de vagas reais e uma candidatura real vai com o PDF ajustado.
-- [ ] **T4.1 — Cidade e modo interativo.** Campo de cidade com autocomplete preenchido com `perfil.cidade`, escolhendo a sugestão cuja cidade (antes da vírgula) é igual à do perfil; sem sugestão igual, a vaga fica pendente. Flag `--interativo` no `rodar` e no `aplicar`: pergunta no terminal o que viraria pendente, pergunta de novo se a resposta não casa com as opções, Enter vazio deixa pendente, e uma resposta válida pode ser salva na tabela de Respostas padrão do `config.md` (`Salvar no config.md? [y/N]`). Resposta não salva vale até o fim da execução. *Pronto:* `rodar --simular --interativo` preenche a cidade na vaga real e uma pergunta respondida no terminal é salva no `config.md`.
-- [ ] **T5 — `relatorio`.**
+- [x] **T4 — Ajuste no `run`.** `tailor.py`, tabela `tailored_resumes`, pasta `curriculos-enviados/`, linhas e resumo. *Pronto:* `run --simulate` gera PDFs de vagas reais e uma candidatura real vai com o PDF ajustado.
+- [ ] **T4.1 — Cidade e modo interativo.** Campo de cidade com autocomplete preenchido com `perfil.cidade`, escolhendo a sugestão cuja cidade (antes da vírgula) é igual à do perfil; sem sugestão igual, a vaga fica pendente. Flag `--interactive` no `run` e no `apply`: pergunta no terminal o que viraria pendente, pergunta de novo se a resposta não casa com as opções, Enter vazio deixa pendente, e uma resposta válida pode ser salva na tabela de Respostas padrão do `config.md` (`Salvar no config.md? [y/N]`). Resposta não salva vale até o fim da execução. *Pronto:* `run --simulate --interactive` preenche a cidade na vaga real e uma pergunta respondida no terminal é salva no `config.md`.
+- [ ] **T5 — `report`.**
 - [ ] **T6 — Fechamento.** README, PRD e `config.example.md`.
 
 Ordem: T1 → T6. TDD, com as seams combinadas antes de cada tarefa, e um commit por tarefa na `develop`.
@@ -186,10 +186,10 @@ Confirmadas em 2026-10-22:
 1. Formato do currículo ajustado: template HTML que copia o visual do `.docx`, gerado em PDF pelo Chromium. Responde a questão em aberto do PRD.
 2. A IA só reescreve o Resumo Profissional e reordena bullets e competências. Cargos, empresas, datas e o texto dos bullets não mudam.
 3. Se a checagem acha algo novo, o ajuste é descartado e vai o currículo base, com aviso na linha da vaga.
-4. O ajuste roda só no `rodar`, com `regras.ajuste_cv_ia: true`. O modo busca continua manual.
-5. O `relatorio` tem resumo por período (`--dias`, padrão 7), lista das candidaturas, taxa de conclusão com os motivos de falha e exportação `--csv`.
+4. O ajuste roda só no `run`, com `regras.ajuste_cv_ia: true`. O modo busca continua manual.
+5. O `report` tem resumo por período (`--days`, padrão 7), lista das candidaturas, taxa de conclusão com os motivos de falha e exportação `--csv`.
 6. Os PDFs enviados ficam em `curriculos-enviados/`, fora do git.
-7. No `--simular`, o PDF é gerado em `debug/simulacao-cv/` e nada vai para o banco.
+7. No `--simulate`, o PDF é gerado em `debug/simulacao-cv/` e nada vai para o banco.
 8. Vaga que volta (pendente respondida) reaproveita o PDF já gerado, sem nova chamada ao LLM.
 9. Currículo base em `.pdf` não é ajustado e vai como está.
 
@@ -198,5 +198,6 @@ Confirmadas durante a T4:
 10. O prompt do ajuste informa quantos bullets cada experiência tem, para o LLM devolver a ordem completa.
 11. Cada provedor de LLM tem uma tentativa só, na análise e no ajuste: se falha, passa para o próximo. O desligamento após 3 falhas seguidas continua. Vale também para o M2.
 12. A confirmação de envio sem `--auto` passa a ser `Enviar? [y/N]` (aceita `y`, `yes`, `s` ou `sim`).
-13. O PDF ajustado é gerado num Chromium headless separado, aberto pelo mesmo Playwright do navegador da candidatura, então funciona também com `--visivel`.
-14. Campo de cidade (autocomplete) é preenchido com `perfil.cidade`; e a flag `--interativo` pergunta no terminal o que viraria pendente e oferece salvar no `config.md` (T4.1).
+13. O PDF ajustado é gerado num Chromium headless separado, aberto pelo mesmo Playwright do navegador da candidatura, então funciona também com `--visible`.
+14. Campo de cidade (autocomplete) é preenchido com `perfil.cidade`; e a flag `--interactive` pergunta no terminal o que viraria pendente e oferece salvar no `config.md` (T4.1).
+15. Comandos e flags ficam em inglês (`validate`, `login`, `session`, `collect`, `search`, `jobs`, `apply`, `run`, `pending`, `report`; `--visible`, `--simulate`, `--ready`, `--skip-collect`, `--interactive`, `--days`), sem os nomes antigos. Descrições e mensagens continuam em português. `-h` funciona como `--help`, e `autoapply --tutorial` mostra o passo a passo.

@@ -2,7 +2,7 @@
 
 Ferramenta pessoal para encontrar vagas Easy Apply do LinkedIn (remotas, Brasil, Júnior e Pleno), comparar com os seus currículos e se candidatar. Requisitos completos em [`PRD.md`](PRD.md); o desenho técnico de cada marco fica em [`specs/`](specs/).
 
-**Status:** M3 (aplicação) concluído: coleta de vagas, avaliação por LLM, modo busca com as pastas das 10 melhores vagas e candidatura pelo Easy Apply, no modo busca (`aplicar`) e no modo normal (`rodar`). O ajuste do currículo por IA e o relatório chegam no M4.
+**Status:** M3 (aplicação) concluído: coleta de vagas, avaliação por LLM, modo busca com as pastas das 10 melhores vagas e candidatura pelo Easy Apply, no modo busca (`apply`) e no modo normal (`run`). O ajuste do currículo por IA e o relatório chegam no M4.
 
 ## Requisitos
 
@@ -42,28 +42,30 @@ Estes arquivos ficam só na sua máquina (estão no `.gitignore`):
 ## Comandos
 
 ```bash
-uv run autoapply validar                # valida o config.md e os currículos
-uv run autoapply login                  # abre o navegador para você logar à mão
-uv run autoapply sessao [--visivel]     # confere se a sessão salva ainda vale
-uv run autoapply coletar [--visivel]    # coleta as vagas e grava no banco
-uv run autoapply buscar [--visivel]     # coleta, avalia e cria as pastas das 10 melhores vagas
-uv run autoapply vagas [--status <s>]   # mostra as vagas do banco (coletada, ignorada, avaliada, aguardando_cv,
-                                        # aplicada, falhou, pendente_pergunta)
-uv run autoapply aplicar <vaga> [--auto] [--simular] [--visivel]      # aplica numa vaga do modo busca (ID ou pasta)
-uv run autoapply aplicar --prontas [--auto] [--simular] [--visivel]   # aplica nas vagas com CV na pasta
-uv run autoapply rodar [--auto] [--sem-coleta] [--simular] [--visivel]  # modo normal: coleta, avalia e aplica
-uv run autoapply pendentes              # perguntas sem resposta que travaram candidaturas
-uv run autoapply --verbose <comando>    # mostra mensagens de depuração
+uv run autoapply --tutorial                                                              # mostra o passo a passo de uso
+uv run autoapply validate                                                                # valida o config.md e os currículos
+uv run autoapply login                                                                   # abre o navegador para você logar à mão
+uv run autoapply session [--visible]                                                     # confere se a sessão salva ainda vale
+uv run autoapply collect [--visible]                                                     # coleta as vagas e grava no banco
+uv run autoapply search [--visible]                                                      # coleta, avalia e cria as pastas das 10 melhores vagas
+uv run autoapply jobs [--status <s>]                                                     # mostra as vagas do banco (coletada, ignorada, avaliada, aguardando_cv,
+                                                                                         # aplicada, falhou, pendente_pergunta)
+uv run autoapply apply <job> [--auto] [--interactive] [--simulate] [--visible]           # aplica numa vaga do modo busca (ID ou pasta)
+uv run autoapply apply --ready [--auto] [--interactive] [--simulate] [--visible]         # aplica nas vagas com CV na pasta
+uv run autoapply run [--auto] [--interactive] [--skip-collect] [--simulate] [--visible]  # modo normal: coleta, avalia e aplica
+uv run autoapply pending                                                                 # perguntas sem resposta que travaram candidaturas
+uv run autoapply --verbose <comando>                                                     # mostra mensagens de depuração
 uv run autoapply --version
+uv run autoapply <comando> -h                                                            # mostra as opções de um comando
 ```
 
 | Comando | Código de saída |
 |---|---|
-| `validar` | `0` válido · `2` config ou currículo padrão inválido |
+| `validate` | `0` válido · `2` config ou currículo padrão inválido |
 | `login` | `0` sessão salva · `1` não logou em 5 min |
-| `sessao` | `0` sessão ativa · `1` sessão expirada · `3` verificação ou página inesperada (salva em `debug/`) |
-| `coletar` e `buscar` | `0` ok · `1` sessão expirada · `2` config inválido · `3` verificação ou página inesperada (salva em `debug/`) |
-| `aplicar` e `rodar` | Os mesmos de `coletar`, mais `2` para `<vaga>` não encontrada ou argumento faltando |
+| `session` | `0` sessão ativa · `1` sessão expirada · `3` verificação ou página inesperada (salva em `debug/`) |
+| `collect` e `search` | `0` ok · `1` sessão expirada · `2` config inválido · `3` verificação ou página inesperada (salva em `debug/`) |
+| `apply` e `run` | Os mesmos de `collect`, mais `2` para `<job>` não encontrada ou argumento faltando |
 
 O login é sempre manual: o sistema nunca guarda a sua senha e nunca tenta resolver CAPTCHA ou verificação. Quando aparece uma, ele para e avisa.
 
@@ -79,12 +81,12 @@ O OpenCode lê a configuração de `$XDG_CONFIG_HOME` e `$XDG_DATA_HOME`. Se ele
 
 ## Candidaturas
 
-- **Modo busca:** salve o currículo adaptado na pasta da vaga como `cv.docx` ou `cv.pdf` (até 2 MB, com texto legível) e rode `aplicar <vaga>` ou `aplicar --prontas`. No `respostas.md` da pasta você pode responder perguntas só daquela vaga, além das linhas especiais `pretensão salarial` e `mensagem`. Essas respostas têm prioridade sobre o `config.md`.
-- **Modo normal:** `rodar` coleta e avalia como o `buscar` e aplica nas vagas sem pasta com score maior ou igual a `regras.score_minimo`, do maior score para o menor, com o currículo do `cv_base/` escolhido na análise. As vagas avaliadas abaixo do mínimo ficam `ignorada`, com o motivo. Com `--sem-coleta`, aplica direto nas vagas já avaliadas no banco.
-- **Perguntas sem resposta:** com `--interativo` (no `rodar` e no `aplicar`), o terminal pergunta o que viraria pendente; Enter vazio deixa a vaga pendente, e uma resposta válida pode ser salva no `config.md`. O campo de cidade com autocomplete usa `perfil.cidade`.
-- **Envio:** com `--auto`, envia sem perguntar. Sem a flag, mostra as respostas preenchidas e pergunta `Enviar? [y/N]`; com "n", descarta o rascunho e não grava nada. O `--simular` percorre o formulário, nunca clica em Enviar e não grava nada no banco.
-- **Respostas:** contato vem do perfil; depois `respostas.md` da vaga, respostas padrão do `config.md`, pretensão pelo nível do título (CLT ou PJ), anos de experiência pelas tecnologias citadas na pergunta, o valor que o LinkedIn já trouxe preenchido e, em texto livre, a resposta genérica. Pergunta objetiva sem resposta não é chutada: a vaga vira `pendente_pergunta` e aparece em `pendentes`, que diz onde responder.
-- **Limite e ritmo:** no máximo `regras.limite_diario` candidaturas por dia, somando `aplicar` e `rodar`. Pausa de 2 a 6 s entre etapas do formulário e de 20 a 60 s entre candidaturas. O currículo sempre vai por upload e "Siga a empresa" é desmarcado.
+- **Modo busca:** salve o currículo adaptado na pasta da vaga como `cv.docx` ou `cv.pdf` (até 2 MB, com texto legível) e rode `apply <job>` ou `apply --ready`. No `respostas.md` da pasta você pode responder perguntas só daquela vaga, além das linhas especiais `pretensão salarial` e `mensagem`. Essas respostas têm prioridade sobre o `config.md`.
+- **Modo normal:** `run` coleta e avalia como o `search` e aplica nas vagas sem pasta com score maior ou igual a `regras.score_minimo`, do maior score para o menor, com o currículo do `cv_base/` escolhido na análise. As vagas avaliadas abaixo do mínimo ficam `ignorada`, com o motivo. Com `--skip-collect`, aplica direto nas vagas já avaliadas no banco.
+- **Perguntas sem resposta:** com `--interactive` (no `run` e no `apply`), o terminal pergunta o que viraria pendente; Enter vazio deixa a vaga pendente, e uma resposta válida pode ser salva no `config.md`. O campo de cidade com autocomplete usa `perfil.cidade`.
+- **Envio:** com `--auto`, envia sem perguntar. Sem a flag, mostra as respostas preenchidas e pergunta `Enviar? [y/N]`; com "n", descarta o rascunho e não grava nada. O `--simulate` percorre o formulário, nunca clica em Enviar e não grava nada no banco.
+- **Respostas:** contato vem do perfil; depois `respostas.md` da vaga, respostas padrão do `config.md`, pretensão pelo nível do título (CLT ou PJ), anos de experiência pelas tecnologias citadas na pergunta, o valor que o LinkedIn já trouxe preenchido e, em texto livre, a resposta genérica. Pergunta objetiva sem resposta não é chutada: a vaga vira `pendente_pergunta` e aparece em `pending`, que diz onde responder.
+- **Limite e ritmo:** no máximo `regras.limite_diario` candidaturas por dia, somando `apply` e `run`. Pausa de 2 a 6 s entre etapas do formulário e de 20 a 60 s entre candidaturas. O currículo sempre vai por upload e "Siga a empresa" é desmarcado.
 - **Segurança:** uma vaga já aplicada nunca é reenviada. Sem a tela de sucesso depois do Enviar, a vaga fica `falhou`, com dump em `debug/`, para você conferir à mão.
 
 ## Testes

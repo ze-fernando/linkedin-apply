@@ -20,7 +20,7 @@ def readable_resumes(
 
 def run_validate(base_dir: Path, monkeypatch: pytest.MonkeyPatch) -> Result:
     monkeypatch.chdir(base_dir)
-    return CliRunner().invoke(app, ["validar"])
+    return CliRunner().invoke(app, ["validate"])
 
 
 def test_validate_shows_summary_and_exits_zero_when_everything_is_valid(

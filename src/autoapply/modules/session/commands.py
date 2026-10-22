@@ -54,7 +54,7 @@ def login() -> None:
 
 
 def check_session_status(
-    visible: bool = typer.Option(False, "--visivel", help="Abre o navegador visível."),
+    visible: bool = typer.Option(False, "--visible", help="Abre o navegador visível."),
 ) -> None:
     with open_browser_context(headless=not visible, profile_dir=BROWSER_PROFILE_DIR) as context:
         page = open_feed(context)

@@ -140,7 +140,7 @@ no bloco acima não é chutada: ela vira pendente e a vaga é tentada de novo de
 | Precisa de patrocínio de visto?             | Não           |
 | Está autorizado a trabalhar no Brasil?      | Sim           |
 
-<!-- Adicione novas respostas aqui conforme aparecerem em "pendentes". -->
+<!-- Adicione novas respostas aqui conforme aparecerem no `autoapply pending`. -->
 
 # Resposta genérica
 

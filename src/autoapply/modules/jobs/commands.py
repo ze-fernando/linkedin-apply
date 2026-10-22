@@ -42,7 +42,7 @@ def run_collection(config: Config, visible: bool, connection: sqlite3.Connection
 
 
 def collect(
-    visible: bool = typer.Option(False, "--visivel", help="Abre o navegador visível."),
+    visible: bool = typer.Option(False, "--visible", help="Abre o navegador visível."),
     config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
 ) -> None:
     config = load_valid_config(config_path)

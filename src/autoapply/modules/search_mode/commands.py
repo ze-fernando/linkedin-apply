@@ -45,7 +45,7 @@ def describe_shortfall(config: Config, created: int) -> str | None:
 
 
 def search(
-    visible: bool = typer.Option(False, "--visivel", help="Abre o navegador visível."),
+    visible: bool = typer.Option(False, "--visible", help="Abre o navegador visível."),
     config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
 ) -> None:
     config = load_valid_config(config_path)

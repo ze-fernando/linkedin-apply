@@ -133,7 +133,7 @@ def prepare_candidates(folder_jobs: list[FolderJob]) -> list[ApplicationCandidat
 
 def select_folder_jobs(connection: sqlite3.Connection, argument: str | None, ready: bool) -> list[FolderJob]:
     if (argument is None) == (not ready):
-        console.print("[red]✖ Informe uma vaga (ID ou pasta) ou use --prontas.[/]")
+        console.print("[red]✖ Informe uma vaga (ID ou pasta) ou use --ready.[/]")
         raise typer.Exit(USAGE_EXIT_CODE)
     if ready:
         return select_ready_jobs(connection)
@@ -361,14 +361,14 @@ def execute_run(
 
 
 def apply(
-    argument: str | None = typer.Argument(None, metavar="VAGA", help="ID da vaga ou nome da pasta em vagas/."),
-    ready: bool = typer.Option(False, "--prontas", help="Aplica nas vagas com currículo na pasta."),
+    argument: str | None = typer.Argument(None, metavar="JOB", help="ID da vaga ou nome da pasta em vagas/."),
+    ready: bool = typer.Option(False, "--ready", help="Aplica nas vagas com currículo na pasta."),
     auto: bool = typer.Option(False, "--auto", help="Envia sem pedir confirmação."),
     interactive: bool = typer.Option(
-        False, "--interativo", help="Pergunta no terminal o que não souber responder e oferece salvar no config.md."
+        False, "--interactive", help="Pergunta no terminal o que não souber responder e oferece salvar no config.md."
     ),
-    simulate: bool = typer.Option(False, "--simular", help="Percorre o formulário sem enviar."),
-    visible: bool = typer.Option(False, "--visivel", help="Abre o navegador visível."),
+    simulate: bool = typer.Option(False, "--simulate", help="Percorre o formulário sem enviar."),
+    visible: bool = typer.Option(False, "--visible", help="Abre o navegador visível."),
     config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
 ) -> None:
     config = load_valid_config(config_path)
@@ -407,13 +407,13 @@ def collect_and_evaluate(connection: sqlite3.Connection, config: Config, visible
 def run(
     auto: bool = typer.Option(False, "--auto", help="Envia sem pedir confirmação."),
     interactive: bool = typer.Option(
-        False, "--interativo", help="Pergunta no terminal o que não souber responder e oferece salvar no config.md."
+        False, "--interactive", help="Pergunta no terminal o que não souber responder e oferece salvar no config.md."
     ),
     skip_collection: bool = typer.Option(
-        False, "--sem-coleta", help="Pula a coleta e a avaliação e aplica nas vagas já avaliadas."
+        False, "--skip-collect", help="Pula a coleta e a avaliação e aplica nas vagas já avaliadas."
     ),
-    simulate: bool = typer.Option(False, "--simular", help="Percorre o formulário sem enviar."),
-    visible: bool = typer.Option(False, "--visivel", help="Abre o navegador visível."),
+    simulate: bool = typer.Option(False, "--simulate", help="Percorre o formulário sem enviar."),
+    visible: bool = typer.Option(False, "--visible", help="Abre o navegador visível."),
     config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
 ) -> None:
     config = load_valid_config(config_path)
@@ -472,5 +472,5 @@ def show_pending() -> None:
     console.print(build_pending_table(groups))
     console.print(
         "Responda na tabela de respostas (pergunta → resposta) do arquivo indicado. "
-        "A próxima execução do `rodar` ou do `aplicar` tenta essas vagas de novo."
+        "A próxima execução do `run` ou do `apply` tenta essas vagas de novo."
     )
