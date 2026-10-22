@@ -14,7 +14,7 @@ perfil:
   telefone: "+55 11 91234-5678"
   ddd: "11"
   celular: "91234-5678"
-  cidade: São Paulo
+  cidade: São Paulo  # preenche o campo de cidade com autocomplete do Easy Apply
   estado: SP
   pais: Brasil
   linkedin: https://www.linkedin.com/in/maria-teste
@@ -106,7 +106,7 @@ regras:
   score_minimo: 70
   limite_diario: 15
   modo_busca_quantidade: 10
-  ajuste_cv_ia: false
+  ajuste_cv_ia: false  # true: o run ajusta o .docx escolhido por IA e envia o PDF (veja o README)
   analise_llm_max_vagas: 30
 
 llm:

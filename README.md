@@ -2,7 +2,7 @@
 
 Ferramenta pessoal para encontrar vagas Easy Apply do LinkedIn (remotas, Brasil, Júnior e Pleno), comparar com os seus currículos e se candidatar. Requisitos completos em [`PRD.md`](PRD.md); o desenho técnico de cada marco fica em [`specs/`](specs/).
 
-**Status:** M3 (aplicação) concluído: coleta de vagas, avaliação por LLM, modo busca com as pastas das 10 melhores vagas e candidatura pelo Easy Apply, no modo busca (`apply`) e no modo normal (`run`). O ajuste do currículo por IA e o relatório chegam no M4.
+**Status:** M4 (ajuste por IA) concluído, fechando o MVP: coleta de vagas, avaliação por LLM, modo busca com as pastas das 10 melhores vagas, candidatura pelo Easy Apply no modo busca (`apply`) e no modo normal (`run`), ajuste do currículo por IA e relatório (`report`).
 
 ## Requisitos
 
@@ -46,8 +46,9 @@ Estes arquivos ficam só na sua máquina (estão no `.gitignore`):
 | `data/browser-profile/` | Perfil do navegador com a sessão do LinkedIn |
 | `data/autoapply.db` | Banco SQLite com as vagas, as análises, as tentativas de candidatura e as perguntas pendentes |
 | `vagas/` | Uma pasta por vaga do modo busca, com o `vaga.md`, o `respostas.md` e o seu `cv.docx` ou `cv.pdf` |
+| `curriculos-enviados/` | PDFs dos currículos ajustados pela IA (`AAAA-MM-DD-empresa-cargo.pdf`) |
 | `logs/` | Log do dia em JSON Lines (`AAAA-MM-DD.log`), com e-mail e telefone mascarados |
-| `debug/` | Print e HTML de páginas inesperadas e de falhas na candidatura; HTML da tela de sucesso de cada envio |
+| `debug/` | Print e HTML de páginas inesperadas e de falhas na candidatura; HTML da tela de sucesso de cada envio; em `debug/simulacao-cv/`, os PDFs ajustados do `--simulate` |
 
 ## Comandos
 
@@ -99,6 +100,19 @@ O OpenCode lê a configuração de `$XDG_CONFIG_HOME` e `$XDG_DATA_HOME`. Se ele
 - **Respostas:** contato vem do perfil; depois `respostas.md` da vaga, respostas padrão do `config.md`, pretensão pelo nível do título (CLT ou PJ), anos de experiência pelas tecnologias citadas na pergunta, o valor que o LinkedIn já trouxe preenchido e, em texto livre, a resposta genérica. Pergunta objetiva sem resposta não é chutada: a vaga vira `pendente_pergunta` e aparece em `pending`, que diz onde responder.
 - **Limite e ritmo:** no máximo `regras.limite_diario` candidaturas por dia, somando `apply` e `run`. Pausa de 2 a 6 s entre etapas do formulário e de 20 a 60 s entre candidaturas. O currículo sempre vai por upload e "Siga a empresa" é desmarcado.
 - **Segurança:** uma vaga já aplicada nunca é reenviada. Sem a tela de sucesso depois do Enviar, a vaga fica `falhou`, com dump em `debug/`, para você conferir à mão.
+
+## Ajuste do currículo por IA
+
+Com `regras.ajuste_cv_ia: true`, o `run` ajusta o currículo `.docx` escolhido antes de cada candidatura real (o modo busca continua com o seu `cv.docx` ou `cv.pdf`):
+
+- **O que muda:** o LLM (na ordem de `llm.provedores`, uma tentativa por provedor) reescreve o Resumo Profissional e reordena os bullets de cada experiência e as competências. Cargos, empresas, datas e o texto dos bullets não mudam. O cabeçalho com os seus contatos não vai para o LLM, e o resto vai com e-mail e telefone mascarados.
+- **Checagem:** o plano só vale se as ordens forem permutações completas e o resumo não estiver vazio, não passar do dobro do original e não citar tecnologia, número ou nome que não está no currículo base. O PDF gerado é relido para conferir o texto.
+- **Resultado:** o PDF, com o visual do `.docx`, vai para `curriculos-enviados/AAAA-MM-DD-empresa-cargo.pdf` e a linha da vaga mostra `cv ajustado`. Se a checagem reprova ou nenhum LLM responde, vai o currículo base e a linha mostra `ajuste descartado: <motivo>`. Uma vaga que volta (ex.: depois de uma pendente) reaproveita o PDF já usado.
+- **Simulação:** com `--simulate`, os PDFs vão para `debug/simulacao-cv/` e nada é gravado no banco.
+
+## Relatório
+
+`report` lê só o banco local e mostra, para os últimos `--days` dias (padrão 7; `0` = todo o histórico): tentativas por modo e resultado, vagas ignoradas, taxa de conclusão (aplicadas ÷ aplicadas + falhas + pendentes), os 3 motivos de falha mais comuns e a última tentativa de cada vaga, com score e se o currículo foi o base ou o ajustado. Com `--csv <arquivo>`, salva essa lista em CSV com `;` e UTF-8 com BOM, pronto para abrir na planilha.
 
 ## Testes
 

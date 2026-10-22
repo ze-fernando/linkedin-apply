@@ -1,6 +1,6 @@
 # Spec técnica — M4: Ajuste por IA e relatório
 
-**Status:** Aprovado · **Atualizado:** 2026-10-22
+**Status:** Concluído · **Atualizado:** 2026-10-22
 **PRD:** [../PRD.md](../PRD.md) — História 4.2 (ajuste automático do currículo), FR-010 (histórico e relatório), FR-011 (ajuste sem inventar informação), risco "A IA inventa informação no currículo"
 **Base:** [M2-leitura.md](M2-leitura.md) (provedores de LLM, análise) e [M3-aplicacao.md](M3-aplicacao.md) (motor do Easy Apply, `run`, histórico de tentativas)
 
@@ -175,7 +175,7 @@ Nenhum teste chama um LLM real ou o LinkedIn.
 - [x] **T4 — Ajuste no `run`.** `tailor.py`, tabela `tailored_resumes`, pasta `curriculos-enviados/`, linhas e resumo. *Pronto:* `run --simulate` gera PDFs de vagas reais e uma candidatura real vai com o PDF ajustado.
 - [x] **T4.1 — Cidade e modo interativo.** Campo de cidade com autocomplete preenchido com `perfil.cidade`, escolhendo a sugestão cuja cidade (antes da vírgula) é igual à do perfil; sem sugestão igual, a vaga fica pendente. Flag `--interactive` no `run` e no `apply`: pergunta no terminal o que viraria pendente, pergunta de novo se a resposta não casa com as opções, Enter vazio deixa pendente, e uma resposta válida pode ser salva na tabela de Respostas padrão do `config.md` (`Salvar no config.md? [y/N]`). Resposta não salva vale até o fim da execução. *Pronto:* `run --simulate --interactive` preenche a cidade na vaga real e uma pergunta respondida no terminal é salva no `config.md`.
 - [x] **T5 — `report`.**
-- [ ] **T6 — Fechamento.** README, PRD e `config.example.md`.
+- [x] **T6 — Fechamento.** README, PRD e `config.example.md`.
 
 Ordem: T1 → T6. TDD, com as seams combinadas antes de cada tarefa, e um commit por tarefa na `develop`.
 
