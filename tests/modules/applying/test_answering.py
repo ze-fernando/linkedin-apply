@@ -223,6 +223,9 @@ KEYWORD_EXPERIENCE = {
         (FieldKind.SELECT, "Você possui mais de 2 anos de experiência com Linux?", "No"),
         (FieldKind.SELECT, "Você possui experiência com Kotlin?", "No"),
         (FieldKind.NUMBER, "Possui quantos anos de experiência em Linux, RPA ou cibersegurança;", "3"),
+        (FieldKind.NUMBER, "Há quanto tempo você atua como desenvolvedor?", "5"),
+        (FieldKind.NUMBER, "How many years of experience do you have as a software developer?", "5"),
+        (FieldKind.SELECT, "Você possui pelo menos 3 anos de experiência com desenvolvimento de software?", "Yes"),
     ],
 )
 def test_resolve_field_answers_experience_by_technologies_found_in_the_question(

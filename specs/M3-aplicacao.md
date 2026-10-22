@@ -153,7 +153,7 @@ Para cada campo, a primeira fonte que responder vence. A fonte vai para o log, e
 - Padrões em português, inglês e espanhol, por exemplo "Quantos anos de experiência (você tem) com X", "How many years of (work) experience do you have with X", "Cuántos años de experiencia tienes con X".
 - X é comparado às chaves de `experiencia_anos`, sem acento e sem diferença de maiúsculas, inteiro ("ASP.NET Core" não casa com "ASP.NET").
 - X fora de `experiencia_anos` → passa para a busca por palavras-chave abaixo.
-- **Palavras-chave na pergunta:** em pergunta de experiência (cita "experiência", "conhecimento", "anos", "atuou" e equivalentes em inglês), procura todas as chaves de `experiencia_anos` com 3 ou mais caracteres, por palavra inteira. Número → o maior número de anos entre as encontradas. Sim/não → "Sim" se esse maior número alcança o mínimo citado ("mais de 3 anos" exige mais que 3; "pelo menos 2", "at least 2" e "2+ anos" exigem 2 ou mais; sem número, basta 1 ano), senão "Não". Sem nenhuma chave encontrada → pendente (só quando o campo não veio pré-preenchido; ver 7.1).
+- **Palavras-chave na pergunta:** em pergunta de experiência (cita "experiência", "conhecimento", "anos", "atuou" e equivalentes em inglês), procura todas as chaves de `experiencia_anos` com 3 ou mais caracteres, por palavra inteira. Número → o maior número de anos entre as encontradas. Sim/não → "Sim" se esse maior número alcança o mínimo citado ("mais de 3 anos" exige mais que 3; "pelo menos 2", "at least 2" e "2+ anos" exigem 2 ou mais; sem número, basta 1 ano), senão "Não". Sem nenhuma chave encontrada, mas com o papel de desenvolvedor na pergunta ("Há quanto tempo você atua como desenvolvedor?", "years as a software developer"), usa `total_desenvolvimento`. Sem nada disso → pendente (só quando o campo não veio pré-preenchido; ver 7.1).
 
 ### 7.3 Pretensão salarial
 
@@ -265,3 +265,4 @@ Confirmadas em 2026-10-21:
 20. Perguntas de experiência também são respondidas pelas tecnologias citadas na pergunta (seção 7.2), só com chaves de 3 ou mais caracteres.
 21. O `rodar --sem-coleta` aplica direto nas vagas já avaliadas, sem coleta nem avaliação.
 22. As 5 candidaturas da primeira execução real, enviadas mas marcadas `falhou` porque o texto de sucesso não foi reconhecido, foram corrigidas no banco para `aplicada`.
+23. Pergunta sobre tempo como desenvolvedor, sem tecnologia citada, usa `total_desenvolvimento` (pedido depois da primeira execução real).

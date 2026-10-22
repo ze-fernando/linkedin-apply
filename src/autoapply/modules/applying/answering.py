@@ -3,6 +3,7 @@ import re
 from autoapply.modules.applying.answer_rules import (
     choose_salary,
     find_experience_technology,
+    find_developer_years,
     find_experience_years,
     find_question_technology_years,
     find_salary_question,
@@ -95,7 +96,11 @@ def find_experience_answer(field: FormField, context: AnswerContext) -> tuple[An
 def find_keyword_experience_answer(field: FormField, context: AnswerContext) -> tuple[AnswerSource, str] | None:
     if not is_experience_question(field.label):
         return None
-    years = find_question_technology_years(field.label, context.config.experiencia_anos)
+    experience = context.config.experiencia_anos
+    developer_years = find_developer_years(field.label, experience)
+    years = find_question_technology_years(field.label, experience) or (
+        [] if developer_years is None else [developer_years]
+    )
     if not years:
         return None
     if field.kind == FieldKind.NUMBER:

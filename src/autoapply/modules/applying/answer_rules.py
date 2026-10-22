@@ -30,7 +30,27 @@ EXPERIENCE_WORDS = [
     "atuou",
     "trabalhou",
     "worked",
+    "atua",
+    "quanto tempo",
+    "how long",
+    "cuanto tiempo",
 ]
+DEVELOPER_ROLE_TERMS = [
+    "desenvolvedor",
+    "desenvolvedora",
+    "programador",
+    "programadora",
+    "developer",
+    "programmer",
+    "desarrollador",
+    "desarrolladora",
+    "engenheiro de software",
+    "engenheira de software",
+    "software engineer",
+    "desenvolvimento de software",
+    "software development",
+]
+TOTAL_EXPERIENCE_KEY = "total_desenvolvimento"
 MINIMUM_YEARS_PATTERNS = [
     re.compile(
         r"(?P<qualifier>mais de|more than|over|mas de|pelo menos|ao menos|no minimo|minimo de|at least|al menos)"
@@ -87,6 +107,14 @@ def find_question_technology_years(question: str, experience: dict[str, int]) ->
         and len(key) >= MIN_EXPERIENCE_TERM_LENGTH
         and contains_term(question, key)
     ]
+
+
+def find_developer_years(question: str, experience: dict[str, int]) -> int | None:
+    if TOTAL_EXPERIENCE_KEY not in experience:
+        return None
+    if not any(contains_term(question, term) for term in DEVELOPER_ROLE_TERMS):
+        return None
+    return experience[TOTAL_EXPERIENCE_KEY]
 
 
 def has_minimum_experience(question: str, years: int) -> bool:
