@@ -168,3 +168,12 @@ class FolderJob:
 class NormalSelection:
     candidates: list[ApplicationCandidate]
     ignored: list[tuple[Job, str]]
+
+
+@dataclass(frozen=True)
+class PendingGroup:
+    question: str
+    field_kind: FieldKind
+    options: list[str]
+    jobs: list[Job]
+    answer_places: list[str]

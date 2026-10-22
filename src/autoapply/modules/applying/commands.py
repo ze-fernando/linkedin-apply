@@ -16,9 +16,11 @@ from autoapply.modules.applying.models import (
     ApplicationResult,
     ApplyMode,
     FolderJob,
+    PendingGroup,
     RunEntry,
     RunSummary,
 )
+from autoapply.modules.applying.pending import group_pending_questions
 from autoapply.modules.applying.runner import run_applications
 from autoapply.modules.applying.selection import find_job_for_argument, select_normal_candidates, select_ready_jobs
 from autoapply.modules.applying.store import count_applied_on
@@ -294,3 +296,35 @@ def run(
             return
         summary = execute_run(connection, config, selection.candidates, ApplyMode.NORMAL, simulate, auto, visible)
     show_run_summary(summary)
+
+
+def describe_group_jobs(group: PendingGroup) -> str:
+    return "\n".join(f"{job.company} · {job.title}" for job in group.jobs)
+
+
+def build_pending_table(groups: list[PendingGroup]) -> Table:
+    table = Table(title=f"Perguntas pendentes ({len(groups)})", show_lines=True)
+    for column in ["Pergunta", "Tipo", "Opções", "Vagas", "Onde responder"]:
+        table.add_column(column)
+    for group in groups:
+        table.add_row(
+            group.question,
+            group.field_kind,
+            ", ".join(group.options) or "-",
+            describe_group_jobs(group),
+            "\n".join(group.answer_places),
+        )
+    return table
+
+
+def show_pending() -> None:
+    with open_database(DATABASE_FILE) as connection:
+        groups = group_pending_questions(connection)
+    if not groups:
+        console.print("[green]✔ Nenhuma pergunta pendente.[/]")
+        return
+    console.print(build_pending_table(groups))
+    console.print(
+        "Responda na tabela de respostas (pergunta → resposta) do arquivo indicado. "
+        "A próxima execução do `rodar` ou do `aplicar` tenta essas vagas de novo."
+    )

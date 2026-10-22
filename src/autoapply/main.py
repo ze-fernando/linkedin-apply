@@ -2,7 +2,7 @@ from importlib.metadata import version
 
 import typer
 
-from autoapply.modules.applying.commands import apply, run
+from autoapply.modules.applying.commands import apply, run, show_pending
 from autoapply.modules.config.commands import validate
 from autoapply.modules.jobs.commands import collect, show_jobs
 from autoapply.modules.search_mode.commands import search
@@ -23,6 +23,7 @@ app.command("buscar", help="Coleta, avalia e cria as pastas das melhores vagas e
 app.command("vagas", help="Mostra as vagas guardadas no banco.")(show_jobs)
 app.command("aplicar", help="Aplica nas vagas do modo busca (vagas/).")(apply)
 app.command("rodar", help="Coleta, avalia e aplica nas vagas com score suficiente (modo normal).")(run)
+app.command("pendentes", help="Mostra as perguntas sem resposta que travaram candidaturas.")(show_pending)
 
 
 def show_version(requested: bool) -> None:

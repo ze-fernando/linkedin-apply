@@ -234,7 +234,7 @@ O LinkedIn real **nunca** é chamado nos testes, e a trava de rede do M1 continu
 - [x] **T4 — Motor do Easy Apply.** Modal falso, preenchimento, upload, simulação, descarte e dump. _Pronto:_ testes passam e `--simular` percorre 3 vagas reais até a revisão.
 - [x] **T5 — `aplicar` e runner.** Limite, ritmo, linhas e resumo. Migração: registra em `job_folders` as pastas criadas no M2 (ID lido do link no `vaga.md`). _Pronto:_ testes passam e o comando trata argumentos, migração e vaga sem CV.
 - [x] **T6 — `rodar` e `--auto`.** Seleção por score, ignoradas por score mínimo, confirmação antes do envio e `--auto`. _Pronto:_ a primeira candidatura real é enviada; a tela de sucesso e a vaga já aplicada são capturadas e viram fixture.
-- [ ] **T7 — `pendentes`.**
+- [x] **T7 — `pendentes`.**
 - [ ] **T8 — Fechamento.** README e PRD.
 
 Ordem: T1 → T8. TDD, com as seams combinadas antes de cada tarefa, e um commit por tarefa na `develop`.
