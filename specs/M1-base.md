@@ -45,11 +45,10 @@ Achados para a implementação:
 
 ## 3. Estrutura do projeto
 
-Estrutura **modular** (regra de `ai-docs/docs/instructions.md`): cada funcionalidade é um módulo em `modules/`, com seus tipos, funções e comandos de CLI.
+Estrutura **modular** (regra de `instructions.md` das regras globais em `~/.claude/ai-docs/`): cada funcionalidade é um módulo em `modules/`, com seus tipos, funções e comandos de CLI.
 
 ```
 linkedin-scraping/
-├── ai-docs/                  # regras do projeto (AGENTS.md, docs/)
 ├── PRD.md
 ├── specs/M1-base.md
 ├── config.md                 # dados pessoais (gitignored)
@@ -85,13 +84,13 @@ linkedin-scraping/
 
 > As anotações `# ...` da árvore acima são só documentação da spec. O código não terá comentários.
 
-### 3.1 Regras de código (de `ai-docs/`)
+### 3.1 Regras de código (das regras globais em `~/.claude/ai-docs/`)
 
 - **Nenhum comentário no código**, em nenhuma hipótese. Os nomes de funções e variáveis devem se explicar.
 - **Classes só para DTOs e tipos** (modelos Pydantic, dataclasses, enums, exceções). Lógica sempre em **funções de módulo**: nada de `Service`, `Repository` ou `Manager`.
 - **Tipagem obrigatória** em parâmetros, retornos e tipos customizados. **Não** tipar variáveis locais comuns.
 - Nomes de funções descritivos (`load_config`, `extract_resume_text`, `detect_page_state`), sem abreviações.
-- **Commits:** semânticos, com emoji, conforme `ai-docs/docs/guia-commits.md` (ex.: `:sparkles: feat: Leitura do config`). Primeira linha com no máximo 4 palavras. **Sem `Co-Authored-By`**. O guia deve ser consultado antes de cada commit.
+- **Commits:** semânticos, com emoji, conforme o `guia-commits.md` das regras globais (ex.: `:sparkles: feat: Leitura do config`). Primeira linha com no máximo 4 palavras. **Sem `Co-Authored-By`**. O guia deve ser consultado antes de cada commit.
 
 **Idioma dos identificadores:** funções e tipos em inglês. Os campos dos modelos de config usam as mesmas chaves em português do `config.md`, sem alias.
 
