@@ -55,6 +55,13 @@ class ProviderAnalysis:
     analysis: LlmAnalysis
 
 
+@dataclass(frozen=True)
+class ProviderAnswer[T]:
+    provider: ProvedorLlm
+    model: str
+    value: T
+
+
 @dataclass
 class ProviderRun:
     providers: list[ProvedorLlm]

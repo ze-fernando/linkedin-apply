@@ -47,5 +47,13 @@ class ResumeDocument:
     languages: list[TextRun]
 
 
+@dataclass(frozen=True)
+class TailoringPlan:
+    summary: str
+    bullet_orders: list[list[int]]
+    skill_line_order: list[int]
+    skill_item_orders: list[list[int]]
+
+
 class ResumeStructureError(Exception):
     pass

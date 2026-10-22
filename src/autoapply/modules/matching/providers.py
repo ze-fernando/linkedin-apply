@@ -2,9 +2,16 @@ import json
 import logging
 import shutil
 import subprocess
+from collections.abc import Callable
 
 from autoapply.modules.config.models import Llm, ProvedorLlm
-from autoapply.modules.matching.models import LlmAnalysis, ProviderAnalysis, ProviderFailure, ProviderRun
+from autoapply.modules.matching.models import (
+    LlmAnalysis,
+    ProviderAnalysis,
+    ProviderAnswer,
+    ProviderFailure,
+    ProviderRun,
+)
 from autoapply.modules.matching.prompt import build_analysis_schema
 
 ANALYSIS_FIELDS = {"curriculo", "score", "resumo", "requisitos", "palavras_chave", "gap"}
@@ -26,7 +33,7 @@ def find_available_providers(llm: Llm) -> list[ProvedorLlm]:
     ]
 
 
-def build_claude_command(model: str, resume_names: list[str]) -> list[str]:
+def build_claude_command(model: str, schema: dict[str, object]) -> list[str]:
     return [
         "claude",
         "-p",
@@ -38,7 +45,7 @@ def build_claude_command(model: str, resume_names: list[str]) -> list[str]:
         "--tools",
         "",
         "--json-schema",
-        json.dumps(build_analysis_schema(resume_names), ensure_ascii=False),
+        json.dumps(schema, ensure_ascii=False),
     ]
 
 
@@ -57,9 +64,9 @@ def parse_analysis(data: object, resume_names: list[str]) -> LlmAnalysis:
     )
 
 
-def build_opencode_command(model: str, prompt: str, resume_names: list[str]) -> list[str]:
-    schema = json.dumps(build_analysis_schema(resume_names), ensure_ascii=False)
-    message = f"{prompt}\n\nResponda apenas com um objeto JSON válido que siga este JSON Schema:\n{schema}"
+def build_opencode_command(model: str, prompt: str, schema: dict[str, object]) -> list[str]:
+    schema_text = json.dumps(schema, ensure_ascii=False)
+    message = f"{prompt}\n\nResponda apenas com um objeto JSON válido que siga este JSON Schema:\n{schema_text}"
     return ["opencode", "run", "--standalone", "-m", model, message]
 
 
@@ -86,13 +93,18 @@ def read_opencode_output(stdout: str) -> object:
     raise ProviderFailure(f"opencode não devolveu JSON: {stdout[:300]}")
 
 
-def run_provider(
-    provider: ProvedorLlm, prompt: str, model: str, timeout_seconds: int, resume_names: list[str]
-) -> LlmAnalysis:
+def run_provider[T](
+    provider: ProvedorLlm,
+    prompt: str,
+    model: str,
+    timeout_seconds: int,
+    schema: dict[str, object],
+    parse: Callable[[object], T],
+) -> T:
     if provider == "claude":
-        command, stdin = build_claude_command(model, resume_names), prompt
+        command, stdin = build_claude_command(model, schema), prompt
     else:
-        command, stdin = build_opencode_command(model, prompt, resume_names), ""
+        command, stdin = build_opencode_command(model, prompt, schema), ""
     try:
         completed = subprocess.run(command, input=stdin, capture_output=True, text=True, timeout=timeout_seconds)
     except subprocess.TimeoutExpired as error:
@@ -100,7 +112,7 @@ def run_provider(
     if completed.returncode != 0:
         raise ProviderFailure(f"{provider} saiu com código {completed.returncode}: {completed.stderr[:300]}")
     data = read_claude_output(completed.stdout) if provider == "claude" else read_opencode_output(completed.stdout)
-    return parse_analysis(data, resume_names)
+    return parse(data)
 
 
 def is_provider_disabled(run: ProviderRun, provider: ProvedorLlm) -> bool:
@@ -114,17 +126,28 @@ def register_failure(run: ProviderRun, provider: ProvedorLlm, error: ProviderFai
         logger.warning("provedor %s desligado após %d falhas seguidas", provider, MAX_CONSECUTIVE_FAILURES)
 
 
-def analyze_with_fallback(prompt: str, resume_names: list[str], llm: Llm, run: ProviderRun) -> ProviderAnalysis | None:
+def ask_with_fallback[T](
+    prompt: str, schema: dict[str, object], parse: Callable[[object], T], llm: Llm, run: ProviderRun
+) -> ProviderAnswer[T] | None:
     for provider in run.providers:
         model = find_provider_model(llm, provider)
         for _ in range(ATTEMPTS_PER_PROVIDER):
             if is_provider_disabled(run, provider):
                 break
             try:
-                analysis = run_provider(provider, prompt, model, llm.timeout_segundos, resume_names)
+                value = run_provider(provider, prompt, model, llm.timeout_segundos, schema, parse)
             except ProviderFailure as error:
                 register_failure(run, provider, error)
                 continue
             run.consecutive_failures[provider] = 0
-            return ProviderAnalysis(provider=provider, model=model, analysis=analysis)
+            return ProviderAnswer(provider=provider, model=model, value=value)
     return None
+
+
+def analyze_with_fallback(prompt: str, resume_names: list[str], llm: Llm, run: ProviderRun) -> ProviderAnalysis | None:
+    answer = ask_with_fallback(
+        prompt, build_analysis_schema(resume_names), lambda data: parse_analysis(data, resume_names), llm, run
+    )
+    if answer is None:
+        return None
+    return ProviderAnalysis(provider=answer.provider, model=answer.model, analysis=answer.value)
