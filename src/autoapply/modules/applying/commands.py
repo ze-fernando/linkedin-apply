@@ -1,8 +1,11 @@
 import sqlite3
+from collections.abc import Callable
+from contextlib import ExitStack
 from datetime import date, datetime
 from pathlib import Path
 
 import typer
+from playwright.sync_api import BrowserContext
 from rich.status import Status
 from rich.table import Table
 
@@ -29,13 +32,27 @@ from autoapply.modules.config.models import Config, ConfigError
 from autoapply.modules.jobs.commands import run_collection
 from autoapply.modules.jobs.models import Job
 from autoapply.modules.matching.evaluation import evaluate_jobs
-from autoapply.modules.matching.providers import find_available_providers
+from autoapply.modules.matching.keywords import build_vocabulary
+from autoapply.modules.matching.models import ProviderAnswer, ProviderRun
+from autoapply.modules.matching.providers import ask_with_fallback, find_available_providers
+from autoapply.modules.matching.store import find_analysis
 from autoapply.modules.search_mode.commands import describe_evaluation, describe_providers
 from autoapply.modules.session.commands import logged_in_browser
+from autoapply.modules.tailoring.models import TailoringPlan, TailoringResult, TailoringStatus
+from autoapply.modules.tailoring.pdf import open_pdf_context, render_resume_pdf
+from autoapply.modules.tailoring.prompt import build_plan_schema, parse_tailoring_plan
+from autoapply.modules.tailoring.tailor import prepare_tailored_candidate, tailor_resume
 from autoapply.shared.console import console
 from autoapply.shared.database import open_database
 from autoapply.shared.pacing import pause_between_applications, pause_between_steps
-from autoapply.shared.paths import CONFIG_FILE, DATABASE_FILE, DEBUG_DIR, VAGAS_DIR
+from autoapply.shared.paths import (
+    CONFIG_FILE,
+    DATABASE_FILE,
+    DEBUG_DIR,
+    SIMULATED_RESUMES_DIR,
+    TAILORED_RESUMES_DIR,
+    VAGAS_DIR,
+)
 
 USAGE_EXIT_CODE = 2
 OUTCOME_LABELS = {
@@ -49,6 +66,7 @@ OUTCOME_LABELS = {
 SKIPPED_LABEL = "[dim]⏭ Pulada[/]"
 IGNORED_LABEL = "[dim]· Ignorada[/]"
 CONFIRM_ANSWERS = {"s", "sim", "y", "yes"}
+NO_ANALYSIS_REASON = "vaga sem análise"
 
 
 def describe_job(job: Job, score: int | None) -> str:
@@ -146,6 +164,10 @@ def build_run_table(summary: RunSummary) -> Table:
             table.add_row(OUTCOME_LABELS[outcome], str(count))
     if summary.not_attempted:
         table.add_row("[dim]Não tentadas (limite do dia)[/]", str(summary.not_attempted))
+    tailorings = [entry.candidate.tailoring for entry in summary.entries if entry.candidate.tailoring is not None]
+    if tailorings:
+        used = tailorings.count(TailoringStatus.USED)
+        table.add_row("Currículos ajustados", f"{used} usados, {len(tailorings) - used} descartados")
     return table
 
 
@@ -175,7 +197,7 @@ def ask_submit_confirmation(job: Job, answers: list[tuple[str, str]], status: St
     console.print(f"[bold]Pronta para enviar:[/] {job.company} · {job.title} · {job.url}")
     for label, value in answers:
         console.print(f"  • {label}: {value}")
-    confirmed = console.input("Enviar? [s/N] ").strip().casefold() in CONFIRM_ANSWERS
+    confirmed = console.input("Enviar? \\[y/N] ").strip().casefold() in CONFIRM_ANSWERS
     status.start()
     return confirmed
 
@@ -188,6 +210,29 @@ def describe_run_mode(simulate: bool, auto: bool) -> str:
     return "Cada envio pede confirmação no terminal (use --auto para enviar sem perguntar)."
 
 
+def build_tailor(
+    connection: sqlite3.Connection, config: Config, pdf_context: BrowserContext
+) -> Callable[[ApplicationCandidate, Path], TailoringResult]:
+    provider_run = ProviderRun(providers=find_available_providers(config.llm))
+    vocabulary = build_vocabulary(config)
+
+    def ask(prompt: str) -> ProviderAnswer[TailoringPlan] | None:
+        return ask_with_fallback(prompt, build_plan_schema(), parse_tailoring_plan, config.llm, provider_run)
+
+    def render(html: str, path: Path) -> Path:
+        return render_resume_pdf(pdf_context, html, path)
+
+    def tailor(candidate: ApplicationCandidate, pdf_path: Path) -> TailoringResult:
+        analysis = find_analysis(connection, candidate.job.id)
+        if analysis is None:
+            return TailoringResult(
+                status=TailoringStatus.DISCARDED, pdf_path=None, reason=NO_ANALYSIS_REASON, provider=None, model=None
+            )
+        return tailor_resume(candidate.resume_file, candidate.job, analysis, vocabulary, ask, render, pdf_path)
+
+    return tailor
+
+
 def execute_run(
     connection: sqlite3.Connection,
     config: Config,
@@ -196,10 +241,17 @@ def execute_run(
     simulate: bool,
     auto: bool,
     visible: bool,
+    tailor_resumes: bool = False,
 ) -> RunSummary:
     console.print(describe_run_mode(simulate, auto))
-    with logged_in_browser(visible) as context, console.status("Aplicando...") as status:
+    with ExitStack() as stack:
+        context = stack.enter_context(logged_in_browser(visible))
+        status = stack.enter_context(console.status("Aplicando..."))
         page = context.pages[0]
+        tailor = None
+        if tailor_resumes:
+            tailor = build_tailor(connection, config, stack.enter_context(open_pdf_context(context)))
+        pdf_dir = SIMULATED_RESUMES_DIR if simulate else TAILORED_RESUMES_DIR
 
         def confirm_submit(job: Job, answers: list[tuple[str, str]]) -> bool:
             return auto or ask_submit_confirmation(job, answers, status)
@@ -221,6 +273,14 @@ def execute_run(
 
         entries = []
 
+        def prepare(candidate: ApplicationCandidate) -> ApplicationCandidate:
+            if tailor is None:
+                return candidate
+            status.update(f"Ajustando currículo para {candidate.job.company}...")
+            prepared = prepare_tailored_candidate(connection, candidate, simulate, tailor, datetime.now(), pdf_dir)
+            status.update(describe_counters(entries, connection, config, simulate))
+            return prepared
+
         def show(entry: RunEntry) -> None:
             entries.append(entry)
             console.print(format_entry_line(entry))
@@ -233,6 +293,7 @@ def execute_run(
             mode,
             simulate,
             apply_candidate,
+            prepare,
             pause_between_applications,
             datetime.now,
             show,
@@ -289,12 +350,19 @@ def run(
         selection = select_normal_candidates(connection, config)
         for job, reason in selection.ignored:
             console.print(f"{IGNORED_LABEL} · {job.company} · {job.title} · {reason}")
-        if config.regras.ajuste_cv_ia:
-            console.print("[yellow]⚠ O ajuste do currículo por IA só chega no M4; usando os currículos base.[/]")
         if not selection.candidates:
             console.print("Nenhuma vaga com score suficiente para aplicar.")
             return
-        summary = execute_run(connection, config, selection.candidates, ApplyMode.NORMAL, simulate, auto, visible)
+        summary = execute_run(
+            connection,
+            config,
+            selection.candidates,
+            ApplyMode.NORMAL,
+            simulate,
+            auto,
+            visible,
+            config.regras.ajuste_cv_ia,
+        )
     show_run_summary(summary)
 
 

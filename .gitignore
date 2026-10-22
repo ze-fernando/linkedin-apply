@@ -8,6 +8,7 @@ data/
 logs/
 debug/
 vagas/
+curriculos-enviados/
 .playwright/
 
 .venv/

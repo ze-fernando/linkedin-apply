@@ -54,6 +54,17 @@ CREATE TABLE IF NOT EXISTS pending_questions (
   options TEXT NOT NULL,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS tailored_resumes (
+  job_id TEXT PRIMARY KEY REFERENCES jobs(id),
+  base_resume TEXT NOT NULL,
+  pdf_path TEXT,
+  status TEXT NOT NULL,
+  reason TEXT,
+  provider TEXT,
+  model TEXT,
+  created_at TEXT NOT NULL
+);
 """
 
 

@@ -11,7 +11,8 @@ Regras:
 - Não cite tecnologia, empresa, cargo, certificação, número ou tempo de experiência que não esteja no currículo.
 - O resumo novo pode ter no máximo o dobro do tamanho do atual.
 - ordem_bullets: para cada experiência, na ordem em que aparecem, os números dos bullets na nova ordem, \
-mais relevantes para a vaga primeiro. Use todos os números, sem repetir.
+mais relevantes para a vaga primeiro. Use todos os números, sem repetir: \
+cada ordem tem exatamente a quantidade de bullets indicada na experiência.
 - ordem_competencias: os números das linhas de competências na nova ordem, usando todos, sem repetir.
 - ordem_itens: para cada linha de competências, na ordem original das linhas, os números dos itens na nova ordem, \
 usando todos, sem repetir."""
@@ -60,7 +61,8 @@ def parse_tailoring_plan(data: object) -> TailoringPlan:
 
 def format_experience(index: int, experience: ExperienceEntry) -> str:
     bullets = [f"[{position}] {bullet.lead}{bullet.text}" for position, bullet in enumerate(experience.bullets)]
-    return "\n".join([f"Experiência {index}: {experience.title} ({experience.period})", *bullets])
+    header = f"Experiência {index} ({len(experience.bullets)} bullets): {experience.title} ({experience.period})"
+    return "\n".join([header, *bullets])
 
 
 def format_skill_line(index: int, skill_line: SkillLine) -> str:

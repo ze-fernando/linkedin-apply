@@ -59,7 +59,7 @@ src/autoapply/modules/
     └── providers.py       # passa a aceitar schema e leitor de resultado por chamada
 ```
 
-**Provedores de LLM:** hoje `run_provider` e `analyze_with_fallback` só conhecem o schema da análise de vaga. Eles passam a receber o schema e a função que valida o resultado, mantendo o retry, o fallback entre provedores e o desligamento após 3 falhas. A análise de vaga continua igual por fora.
+**Provedores de LLM:** hoje `run_provider` e `analyze_with_fallback` só conhecem o schema da análise de vaga. Eles passam a receber o schema e a função que valida o resultado, mantendo o fallback entre provedores e o desligamento após 3 falhas. A análise de vaga continua igual por fora.
 
 ## 4. Banco
 
@@ -172,7 +172,7 @@ Nenhum teste chama um LLM real ou o LinkedIn.
 - [x] **T1 — Estrutura do CV.** `models.py` e `resume_structure.py`. *Pronto:* os três `.docx` do `cv_base/` são lidos sem erro.
 - [x] **T2 — Template e PDF.** `template.py` e `pdf.py`. *Pronto:* você aprova a prévia com dados fictícios.
 - [x] **T3 — Plano e checagem.** Provedores com schema por chamada, `prompt.py`, `plan.py` e `verification.py`.
-- [ ] **T4 — Ajuste no `rodar`.** `tailor.py`, tabela `tailored_resumes`, pasta `curriculos-enviados/`, linhas e resumo. *Pronto:* `rodar --simular` gera PDFs de vagas reais e uma candidatura real vai com o PDF ajustado.
+- [x] **T4 — Ajuste no `rodar`.** `tailor.py`, tabela `tailored_resumes`, pasta `curriculos-enviados/`, linhas e resumo. *Pronto:* `rodar --simular` gera PDFs de vagas reais e uma candidatura real vai com o PDF ajustado.
 - [ ] **T5 — `relatorio`.**
 - [ ] **T6 — Fechamento.** README, PRD e `config.example.md`.
 
@@ -191,3 +191,10 @@ Confirmadas em 2026-10-22:
 7. No `--simular`, o PDF é gerado em `debug/simulacao-cv/` e nada vai para o banco.
 8. Vaga que volta (pendente respondida) reaproveita o PDF já gerado, sem nova chamada ao LLM.
 9. Currículo base em `.pdf` não é ajustado e vai como está.
+
+Confirmadas durante a T4:
+
+10. O prompt do ajuste informa quantos bullets cada experiência tem, para o LLM devolver a ordem completa.
+11. Cada provedor de LLM tem uma tentativa só, na análise e no ajuste: se falha, passa para o próximo. O desligamento após 3 falhas seguidas continua. Vale também para o M2.
+12. A confirmação de envio sem `--auto` passa a ser `Enviar? [y/N]` (aceita `y`, `yes`, `s` ou `sim`).
+13. O PDF ajustado é gerado num Chromium headless separado, aberto pelo mesmo Playwright do navegador da candidatura, então funciona também com `--visivel`.

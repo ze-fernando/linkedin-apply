@@ -15,7 +15,7 @@ from autoapply.modules.matching.models import (
 from autoapply.modules.matching.prompt import build_analysis_schema
 
 ANALYSIS_FIELDS = {"curriculo", "score", "resumo", "requisitos", "palavras_chave", "gap"}
-ATTEMPTS_PER_PROVIDER = 2
+ATTEMPTS_PER_PROVIDER = 1
 MAX_CONSECUTIVE_FAILURES = 3
 
 logger = logging.getLogger("autoapply.matching")

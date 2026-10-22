@@ -126,7 +126,7 @@ def count_calls(fake_cli_dir: Path, name: str) -> int:
     return len(calls_file.read_text(encoding="utf-8").splitlines()) if calls_file.exists() else 0
 
 
-def test_analyze_with_fallback_retries_once_then_uses_next_provider(
+def test_analyze_with_fallback_tries_each_provider_once_then_uses_the_next(
     install_fake_cli: Callable[..., None], fake_cli_dir: Path
 ) -> None:
     install_fake_cli("claude", "falhou", exit_code=1)
@@ -138,7 +138,7 @@ def test_analyze_with_fallback_retries_once_then_uses_next_provider(
     assert result == ProviderAnalysis(
         provider="opencode", model="opencode/deepseek-v4.1-flash-free", analysis=EXPECTED_ANALYSIS
     )
-    assert count_calls(fake_cli_dir, "claude") == 2
+    assert count_calls(fake_cli_dir, "claude") == 1
     assert count_calls(fake_cli_dir, "opencode") == 1
 
 
@@ -150,8 +150,8 @@ def test_analyze_with_fallback_returns_none_when_all_providers_fail(
     run = ProviderRun(providers=["claude", "opencode"])
 
     assert analyze_with_fallback("PROMPT", RESUME_NAMES, build_llm(), run) is None
-    assert count_calls(fake_cli_dir, "claude") == 2
-    assert count_calls(fake_cli_dir, "opencode") == 2
+    assert count_calls(fake_cli_dir, "claude") == 1
+    assert count_calls(fake_cli_dir, "opencode") == 1
 
 
 def test_analyze_with_fallback_disables_provider_after_three_consecutive_failures(
@@ -209,5 +209,5 @@ def test_ask_with_fallback_rejects_an_answer_that_does_not_follow_the_plan(
     run = ProviderRun(providers=["claude", "opencode"])
 
     assert ask_with_fallback("PROMPT", build_plan_schema(), parse_tailoring_plan, build_llm(), run) is None
-    assert count_calls(fake_cli_dir, "claude") == 2
-    assert count_calls(fake_cli_dir, "opencode") == 2
+    assert count_calls(fake_cli_dir, "claude") == 1
+    assert count_calls(fake_cli_dir, "opencode") == 1

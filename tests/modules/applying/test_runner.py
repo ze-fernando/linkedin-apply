@@ -1,4 +1,5 @@
 import copy
+import dataclasses
 import sqlite3
 from collections.abc import Callable
 from datetime import date, datetime
@@ -35,6 +36,10 @@ def build_apply(
         return results[candidate.job.id]
 
     return apply
+
+
+def keep_candidate(candidate: ApplicationCandidate) -> ApplicationCandidate:
+    return candidate
 
 
 def build_result(outcome: ApplicationOutcome, pending_fields: list[FormField] | None = None) -> ApplicationResult:
@@ -95,6 +100,7 @@ def test_run_applications_stops_at_the_daily_limit_counting_earlier_applications
         ApplyMode.SEARCH,
         False,
         apply,
+        keep_candidate,
         lambda: waits.append(NOW),
         lambda: NOW,
         lambda entry: None,
@@ -132,6 +138,7 @@ def test_run_applications_records_each_outcome_and_skips_jobs_already_applied(
         ApplyMode.SEARCH,
         False,
         apply,
+        keep_candidate,
         lambda: waits.append(NOW),
         lambda: NOW,
         shown.append,
@@ -186,6 +193,7 @@ def test_run_applications_in_simulation_ignores_the_limit_and_writes_nothing(
         ApplyMode.SEARCH,
         True,
         apply,
+        keep_candidate,
         lambda: None,
         lambda: NOW,
         lambda entry: None,
@@ -216,6 +224,7 @@ def test_run_applications_does_not_record_a_declined_submission(
         ApplyMode.NORMAL,
         False,
         apply,
+        keep_candidate,
         lambda: None,
         lambda: NOW,
         lambda entry: None,
@@ -225,3 +234,41 @@ def test_run_applications_does_not_record_a_declined_submission(
     assert read_statuses(connection) == {"recusada": JobStatus.AWAITING_RESUME}
     assert has_applied(connection, "recusada") is False
     assert list_pending_questions(connection) == []
+
+
+def test_run_applications_prepares_only_the_candidates_it_is_going_to_attempt(
+    connection: sqlite3.Connection, valid_data: dict[str, object], base_dir: Path, build_job: Callable[..., Job]
+) -> None:
+    candidates = prepare_candidates(connection, build_job, ["repetida", "nova", "depois-do-limite"])
+    record_applied(connection, "repetida")
+    prepared = []
+    applied_resumes = []
+
+    def prepare(candidate: ApplicationCandidate) -> ApplicationCandidate:
+        prepared.append(candidate.job.id)
+        return dataclasses.replace(candidate, resume_file=Path(f"curriculos-enviados/{candidate.job.id}.pdf"))
+
+    def apply(candidate: ApplicationCandidate) -> ApplicationResult:
+        applied_resumes.append(candidate.resume_file)
+        return build_result(ApplicationOutcome.APPLIED)
+
+    summary = run_applications(
+        connection,
+        build_config(valid_data, base_dir, daily_limit=2),
+        candidates,
+        ApplyMode.NORMAL,
+        False,
+        apply,
+        prepare,
+        lambda: None,
+        lambda: NOW,
+        lambda entry: None,
+    )
+
+    assert prepared == ["nova"]
+    assert applied_resumes == [Path("curriculos-enviados/nova.pdf")]
+    assert [entry.candidate.resume_file for entry in summary.entries] == [
+        Path("vagas/repetida/cv.pdf"),
+        Path("curriculos-enviados/nova.pdf"),
+    ]
+    assert summary.limit_reached is True

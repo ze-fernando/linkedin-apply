@@ -73,6 +73,7 @@ def run_applications(
     mode: ApplyMode,
     simulate: bool,
     apply: Callable[[ApplicationCandidate], ApplicationResult],
+    prepare: Callable[[ApplicationCandidate], ApplicationCandidate],
     wait: Callable[[], None],
     clock: Callable[[], datetime],
     show: Callable[[RunEntry], None],
@@ -89,6 +90,7 @@ def run_applications(
             if attempted:
                 wait()
             attempted = True
+            candidate = prepare(candidate)
             result = apply(candidate)
             if not simulate and result.outcome in RECORDED_OUTCOMES:
                 record_result(connection, candidate, mode, result, clock())

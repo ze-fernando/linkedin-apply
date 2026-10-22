@@ -1,4 +1,9 @@
 from dataclasses import dataclass
+from datetime import datetime
+from enum import StrEnum
+from pathlib import Path
+
+from autoapply.modules.config.models import ProvedorLlm
 
 
 @dataclass(frozen=True)
@@ -53,6 +58,32 @@ class TailoringPlan:
     bullet_orders: list[list[int]]
     skill_line_order: list[int]
     skill_item_orders: list[list[int]]
+
+
+class TailoringStatus(StrEnum):
+    USED = "usado"
+    DISCARDED = "descartado"
+
+
+@dataclass(frozen=True)
+class TailoringResult:
+    status: TailoringStatus
+    pdf_path: Path | None
+    reason: str | None
+    provider: ProvedorLlm | None
+    model: str | None
+
+
+@dataclass(frozen=True)
+class TailoredResume:
+    job_id: str
+    base_resume: Path
+    pdf_path: Path | None
+    status: TailoringStatus
+    reason: str | None
+    provider: ProvedorLlm | None
+    model: str | None
+    created_at: datetime
 
 
 class ResumeStructureError(Exception):

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from autoapply.modules.config.models import Config
 from autoapply.modules.jobs.models import Job
+from autoapply.modules.tailoring.models import TailoringStatus
 
 
 class ApplyMode(StrEnum):
@@ -142,6 +143,7 @@ class ApplicationCandidate:
     job_answers: dict[str, str]
     score: int | None
     warning: str | None = None
+    tailoring: TailoringStatus | None = None
 
 
 @dataclass(frozen=True)

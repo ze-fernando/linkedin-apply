@@ -1,6 +1,19 @@
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 from playwright.sync_api import BrowserContext
+
+
+@contextmanager
+def open_pdf_context(context: BrowserContext) -> Iterator[BrowserContext]:
+    if context.browser is None:
+        raise RuntimeError("navegador sem BrowserType para gerar o PDF")
+    browser = context.browser.browser_type.launch(headless=True)
+    try:
+        yield browser.new_context()
+    finally:
+        browser.close()
 
 
 def render_resume_pdf(context: BrowserContext, html: str, path: Path) -> Path:
