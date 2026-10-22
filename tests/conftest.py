@@ -11,8 +11,16 @@ from pypdf import PdfWriter
 
 from autoapply.modules.jobs.models import Job, JobStatus
 from autoapply.modules.session.browser import open_browser_context
+from autoapply.shared.paths import BROWSERS_DIR
 
 PAGES_DIR = Path(__file__).parent / "fixtures" / "pages"
+PROJECT_DIR = Path(__file__).parent.parent
+
+
+@pytest.fixture(autouse=True)
+def isolate_from_real_project(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("PLAYWRIGHT_BROWSERS_PATH", str((PROJECT_DIR / BROWSERS_DIR).resolve()))
+    monkeypatch.chdir(tmp_path_factory.mktemp("cwd"))
 
 
 @pytest.fixture
