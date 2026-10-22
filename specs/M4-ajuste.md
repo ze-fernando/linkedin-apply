@@ -169,7 +169,7 @@ Nenhum teste chama um LLM real ou o LinkedIn.
 
 ## 10. Tarefas
 
-- [ ] **T1 — Estrutura do CV.** `models.py` e `resume_structure.py`. *Pronto:* os três `.docx` do `cv_base/` são lidos sem erro.
+- [x] **T1 — Estrutura do CV.** `models.py` e `resume_structure.py`. *Pronto:* os três `.docx` do `cv_base/` são lidos sem erro.
 - [ ] **T2 — Template e PDF.** `template.py` e `pdf.py`. *Pronto:* você aprova a prévia com dados fictícios.
 - [ ] **T3 — Plano e checagem.** Provedores com schema por chamada, `prompt.py`, `plan.py` e `verification.py`.
 - [ ] **T4 — Ajuste no `rodar`.** `tailor.py`, tabela `tailored_resumes`, pasta `curriculos-enviados/`, linhas e resumo. *Pronto:* `rodar --simular` gera PDFs de vagas reais e uma candidatura real vai com o PDF ajustado.
