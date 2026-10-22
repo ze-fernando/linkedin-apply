@@ -1,4 +1,5 @@
 import dataclasses
+import sqlite3
 from collections.abc import Callable, Iterator
 from datetime import datetime
 from pathlib import Path
@@ -11,6 +12,7 @@ from pypdf import PdfWriter
 
 from autoapply.modules.jobs.models import Job, JobStatus
 from autoapply.modules.session.browser import open_browser_context
+from autoapply.shared.database import open_database
 from autoapply.shared.paths import BROWSERS_DIR
 
 PAGES_DIR = Path(__file__).parent / "fixtures" / "pages"
@@ -252,3 +254,10 @@ def serve_pages(browser_context: BrowserContext) -> Iterator[Callable[[dict[str,
     browser_context.on("request", record)
     yield serve
     assert set(requested_urls) <= set(routed_urls), "requisição escapou da rota e foi para a rede"
+
+
+@pytest.fixture
+def connection(tmp_path: Path) -> Iterator[sqlite3.Connection]:
+    connection = open_database(tmp_path / "autoapply.db")
+    yield connection
+    connection.close()

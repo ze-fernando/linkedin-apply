@@ -64,6 +64,7 @@ uv run autoapply apply <job> [--auto] [--interactive] [--simulate] [--visible]  
 uv run autoapply apply --ready [--auto] [--interactive] [--simulate] [--visible]         # aplica nas vagas com CV na pasta
 uv run autoapply run [--auto] [--interactive] [--skip-collect] [--simulate] [--visible]  # modo normal: coleta, avalia e aplica
 uv run autoapply pending                                                                 # perguntas sem resposta que travaram candidaturas
+uv run autoapply report [--days N] [--csv <arquivo>]                                     # histórico das candidaturas (padrão 7 dias; 0 = tudo) e CSV
 uv run autoapply --verbose <comando>                                                     # mostra mensagens de depuração
 uv run autoapply --version
 uv run autoapply <comando> -h                                                            # mostra as opções de um comando

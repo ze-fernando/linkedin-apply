@@ -4,6 +4,7 @@ import typer
 
 from autoapply.modules.applying.commands import apply, run, show_pending
 from autoapply.modules.config.commands import validate
+from autoapply.modules.reporting.commands import show_report
 from autoapply.modules.jobs.commands import collect, show_jobs
 from autoapply.modules.search_mode.commands import search
 from autoapply.modules.session.commands import check_session_status, login
@@ -23,6 +24,7 @@ ROOT_EXAMPLES = [
     ("autoapply search --visible", "modo busca: coleta, avalia e cria as pastas em vagas/"),
     ("autoapply jobs --status avaliada", "lista as vagas de um status"),
     ("autoapply pending", "perguntas sem resposta que travaram vagas"),
+    ("autoapply report --days 30 --csv candidaturas.csv", "histórico dos últimos 30 dias, exportado em CSV"),
     ("autoapply <comando> -h", "todas as opções de um comando"),
 ]
 RUN_EXAMPLES = [
@@ -65,6 +67,7 @@ app.command(
     epilog=format_examples(RUN_EXAMPLES),
 )(run)
 app.command("pending", help="Mostra as perguntas sem resposta que travaram candidaturas.")(show_pending)
+app.command("report", help="Mostra o histórico das candidaturas e exporta em CSV.")(show_report)
 
 
 TUTORIAL = """[bold]Passo a passo do LinkedIn Auto-Apply[/]
