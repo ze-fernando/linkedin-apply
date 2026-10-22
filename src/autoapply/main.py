@@ -10,11 +10,47 @@ from autoapply.modules.session.commands import check_session_status, login
 from autoapply.shared.console import configure_logging, console
 from autoapply.shared.paths import LOGS_DIR
 
+ROOT_EXAMPLES = [
+    ("autoapply run", "coleta, avalia e aplica; cada envio pergunta Enviar? \\[y/N]"),
+    ("autoapply run --simulate", "percorre tudo sem enviar nem gravar"),
+    ("autoapply run --auto", "envia sem perguntar"),
+    ("autoapply run --auto --interactive", "envia sozinho e pergunta só o que não souber responder"),
+    ("autoapply run --skip-collect --auto", "aplica só nas vagas já avaliadas, sem coletar"),
+    ("autoapply run --skip-collect --simulate", "testa as vagas já avaliadas sem enviar"),
+    ("autoapply apply <job> --auto --interactive", "aplica numa vaga do modo busca (ID ou pasta)"),
+    ("autoapply apply --ready --auto", "aplica em todas as pastas com currículo"),
+    ("autoapply collect --visible", "só coleta, com o navegador aberto na tela"),
+    ("autoapply search --visible", "modo busca: coleta, avalia e cria as pastas em vagas/"),
+    ("autoapply jobs --status avaliada", "lista as vagas de um status"),
+    ("autoapply pending", "perguntas sem resposta que travaram vagas"),
+    ("autoapply <comando> -h", "todas as opções de um comando"),
+]
+RUN_EXAMPLES = [
+    ("autoapply run --simulate", "percorre tudo sem enviar nem gravar"),
+    ("autoapply run --auto", "envia sem perguntar"),
+    ("autoapply run --auto --interactive", "envia sozinho e pergunta só o que não souber responder"),
+    ("autoapply run --skip-collect --auto", "aplica só nas vagas já avaliadas, sem coletar"),
+    ("autoapply run --skip-collect --simulate --visible", "testa as vagas já avaliadas vendo o navegador"),
+]
+APPLY_EXAMPLES = [
+    ("autoapply apply <job> --simulate", "percorre a candidatura de uma vaga sem enviar"),
+    ("autoapply apply <job> --auto", "aplica numa vaga sem perguntar"),
+    ("autoapply apply --ready --auto --interactive", "aplica nas pastas com currículo e pergunta o que faltar"),
+]
+
+
+def format_examples(examples: list[tuple[str, str]]) -> str:
+    width = max(len(command) for command, _ in examples) + 2
+    lines = [f"{command.ljust(width)}{description}" for command, description in examples]
+    return "\n".join(["[bold]Exemplos[/]", *lines])
+
+
 app = typer.Typer(
     name="autoapply",
     help="Candidatura automática a vagas Easy Apply do LinkedIn.",
     no_args_is_help=True,
     context_settings={"help_option_names": ["-h", "--help"]},
+    epilog=format_examples(ROOT_EXAMPLES),
 )
 app.command("validate", help="Valida o config.md e os currículos.")(validate)
 app.command("login", help="Abre o navegador para você fazer login no LinkedIn.")(login)
@@ -22,8 +58,12 @@ app.command("session", help="Verifica se a sessão do LinkedIn está ativa.")(ch
 app.command("collect", help="Coleta vagas Easy Apply do LinkedIn e grava no banco.")(collect)
 app.command("search", help="Coleta, avalia e cria as pastas das melhores vagas em vagas/.")(search)
 app.command("jobs", help="Mostra as vagas guardadas no banco.")(show_jobs)
-app.command("apply", help="Aplica nas vagas do modo busca (vagas/).")(apply)
-app.command("run", help="Coleta, avalia e aplica nas vagas com score suficiente (modo normal).")(run)
+app.command("apply", help="Aplica nas vagas do modo busca (vagas/).", epilog=format_examples(APPLY_EXAMPLES))(apply)
+app.command(
+    "run",
+    help="Coleta, avalia e aplica nas vagas com score suficiente (modo normal).",
+    epilog=format_examples(RUN_EXAMPLES),
+)(run)
 app.command("pending", help="Mostra as perguntas sem resposta que travaram candidaturas.")(show_pending)
 
 
