@@ -28,7 +28,7 @@ from autoapply.modules.applying.models import (
 )
 from autoapply.modules.jobs.collector import ensure_page_is_usable
 from autoapply.modules.jobs.models import Job
-from autoapply.modules.session.browser import read_page_state, save_debug_dump
+from autoapply.modules.session.browser import save_debug_dump
 from autoapply.shared.text import normalize_text
 
 SEARCH_JOB_URL = "https://www.linkedin.com/jobs/search/?currentJobId={job_id}"
@@ -168,8 +168,10 @@ def discard_application(page: Page, timeout_ms: int) -> None:
         logger.warning("não foi possível descartar o rascunho: %s", error)
 
 
-def fail(page: Page, reason: str, debug_dir: Path, timeout_ms: int, discard: bool = True) -> ApplicationResult:
-    dump_dir = save_debug_dump(page, read_page_state(page), debug_dir)
+def fail(
+    page: Page, job: Job, reason: str, debug_dir: Path, timeout_ms: int, discard: bool = True
+) -> ApplicationResult:
+    dump_dir = save_debug_dump(page, f"falha-{job.id}", debug_dir)
     logger.warning("candidatura falhou: %s; dump em %s", reason, dump_dir)
     if discard:
         discard_application(page, timeout_ms)
@@ -188,7 +190,7 @@ def submit_application(page: Page, job: Job, debug_dir: Path, timeout_ms: int) -
         page.wait_for_function(SUCCESS_SCRIPT, timeout=timeout_ms)
     except PlaywrightError:
         reason = "sem confirmação de envio; confira à mão no LinkedIn"
-        return fail(page, reason, debug_dir, timeout_ms, discard=False)
+        return fail(page, job, reason, debug_dir, timeout_ms, discard=False)
     save_success_dialog(page, job, debug_dir)
     return result(ApplicationOutcome.APPLIED)
 
@@ -257,7 +259,7 @@ def apply_to_job(
     for _ in range(MAX_STEPS):
         step = read_current_step(page)
         if step.errors:
-            return fail(page, f"erro de validação: {'; '.join(step.errors)}", debug_dir, timeout_ms)
+            return fail(page, job, f"erro de validação: {'; '.join(step.errors)}", debug_dir, timeout_ms)
         decisions = [
             (field, ask_until_valid(job, field, resolve_field(field, context), ask_field)) for field in step.fields
         ]
@@ -265,7 +267,7 @@ def apply_to_job(
             log_decision(field, decision)
         failure = next((decision for _, decision in decisions if decision.action == DecisionAction.FAIL), None)
         if failure is not None:
-            return fail(page, failure.reason, debug_dir, timeout_ms)
+            return fail(page, job, failure.reason, debug_dir, timeout_ms)
         pending_fields = [field for field, decision in decisions if decision.action == DecisionAction.PENDING]
         if pending_fields:
             discard_application(page, timeout_ms)
@@ -278,7 +280,7 @@ def apply_to_job(
         answers.extend(list_answers(decisions))
         prepare_step(page, step, resume_file)
         if step.action is None:
-            return fail(page, "etapa sem botão de avançar ou enviar", debug_dir, timeout_ms)
+            return fail(page, job, "etapa sem botão de avançar ou enviar", debug_dir, timeout_ms)
         if step.action == StepAction.SUBMIT and simulate:
             discard_application(page, timeout_ms)
             return result(ApplicationOutcome.SIMULATED)
@@ -288,4 +290,4 @@ def apply_to_job(
         if step.action == StepAction.SUBMIT:
             return submit_application(page, job, debug_dir, timeout_ms)
         advance(page, step.action, wait, timeout_ms)
-    return fail(page, "formulário com etapas demais", debug_dir, timeout_ms)
+    return fail(page, job, "formulário com etapas demais", debug_dir, timeout_ms)

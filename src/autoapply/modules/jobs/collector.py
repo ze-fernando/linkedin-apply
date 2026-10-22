@@ -110,7 +110,7 @@ def build_new_job(
     try:
         detail = open_job_detail(page, card, panel_timeout_ms)
     except PlaywrightError:
-        dump_dir = save_debug_dump(page, read_page_state(page), debug_dir)
+        dump_dir = save_debug_dump(page, f"vaga-nao-abriu-{card.id}", debug_dir)
         logger.warning("vaga %s não abriu; dump em %s", card.id, dump_dir)
         return None
     detail_reason = (

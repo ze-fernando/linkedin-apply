@@ -176,6 +176,7 @@ def test_collect_jobs_dumps_panel_that_never_loads_and_continues(
     assert [job.id for job in list_jobs(connection)] == ["1002"]
     assert summaries[0].new == 1
     [dump_dir] = (tmp_path / "debug").iterdir()
+    assert dump_dir.name.endswith("-vaga-nao-abriu-1001")
     assert (dump_dir / "screenshot.png").is_file()
     assert (dump_dir / "page.html").is_file()
 

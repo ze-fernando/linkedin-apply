@@ -99,8 +99,8 @@ def ensure_session(context: BrowserContext) -> Page:
     return page
 
 
-def save_debug_dump(page: Page, state: PageState, debug_dir: Path) -> Path:
-    dump_dir = debug_dir / f"{datetime.now():%Y%m%d-%H%M%S}-{state}"
+def save_debug_dump(page: Page, label: str, debug_dir: Path) -> Path:
+    dump_dir = debug_dir / f"{datetime.now():%Y%m%d-%H%M%S}-{label}"
     dump_dir.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=dump_dir / "screenshot.png", full_page=True)
     (dump_dir / "page.html").write_text(page.content(), encoding="utf-8")

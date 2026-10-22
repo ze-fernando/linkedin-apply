@@ -218,7 +218,7 @@ def test_apply_to_job_with_unknown_required_field_fails_with_dump_and_discards(
 
     assert (result.outcome, result.reason) == (ApplicationOutcome.FAILED, "tipo de campo não suportado: 'Cidade'")
     assert (log["submitted"], log["discarded"]) == (False, True)
-    assert len(list((tmp_path / "debug").glob("*/page.html"))) == 1
+    assert len(list((tmp_path / "debug").glob(f"*-falha-{JOB_ID}/page.html"))) == 1
 
 
 def test_apply_to_job_with_validation_error_after_advancing_fails_with_error_text(

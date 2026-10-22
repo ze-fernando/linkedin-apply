@@ -57,6 +57,14 @@ def test_feed_with_captcha_iframe_is_checkpoint(read_page: Callable[[str], str])
     assert state == PageState.CHECKPOINT
 
 
+def test_job_page_with_invisible_recaptcha_badge_is_not_checkpoint(read_page: Callable[[str], str]) -> None:
+    state = detect_page_state(
+        "https://www.linkedin.com/jobs/view/4479314122/", read_page("job_invisible_recaptcha.html")
+    )
+
+    assert state == PageState.LOGGED_IN
+
+
 def test_other_page_is_unknown(read_page: Callable[[str], str]) -> None:
     state = detect_page_state("https://www.linkedin.com/company/acme/", read_page("blank.html"))
 

@@ -1,5 +1,5 @@
 from html.parser import HTMLParser
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 from autoapply.modules.session.models import PageState
 
@@ -29,10 +29,17 @@ def has_global_nav(tags: list[HtmlTag]) -> bool:
     )
 
 
+def is_invisible_captcha(attrs: dict[str, str]) -> bool:
+    return "invisible" in parse_qs(urlparse(attrs.get("src", "")).query).get("size", [])
+
+
+def is_captcha_frame(attrs: dict[str, str]) -> bool:
+    return any(marker in attrs.get(name, "") for name in ("id", "src") for marker in CAPTCHA_MARKERS)
+
+
 def has_captcha_frame(tags: list[HtmlTag]) -> bool:
     return any(
-        tag == "iframe" and any(marker in attrs.get(name, "") for name in ("id", "src") for marker in CAPTCHA_MARKERS)
-        for tag, attrs in tags
+        tag == "iframe" and is_captcha_frame(attrs) and not is_invisible_captcha(attrs) for tag, attrs in tags
     )
 
 
