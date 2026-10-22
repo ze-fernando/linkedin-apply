@@ -2,7 +2,7 @@
 
 Ferramenta pessoal para encontrar vagas Easy Apply do LinkedIn (remotas, Brasil, Júnior e Pleno), comparar com os seus currículos e se candidatar. Requisitos completos em [`PRD.md`](PRD.md); o desenho técnico de cada marco fica em [`specs/`](specs/).
 
-**Status:** M2 (leitura) concluído: coleta de vagas, avaliação por LLM e modo busca com as pastas das 10 melhores vagas. As candidaturas chegam nos marcos M3 e M4.
+**Status:** M3 (aplicação) concluído: coleta de vagas, avaliação por LLM, modo busca com as pastas das 10 melhores vagas e candidatura pelo Easy Apply, no modo busca (`aplicar`) e no modo normal (`rodar`). O ajuste do currículo por IA e o relatório chegam no M4.
 
 ## Requisitos
 
@@ -34,10 +34,10 @@ Estes arquivos ficam só na sua máquina (estão no `.gitignore`):
 | `config.md` | Frontmatter YAML com perfil, pretensão, buscas, currículos e regras; depois as seções `# Respostas padrão` (tabela pergunta → resposta) e `# Resposta genérica` (blockquote) |
 | `cv_base/` | Currículos `.docx` ou `.pdf`, um deles marcado como `padrao: true` no `config.md` |
 | `data/browser-profile/` | Perfil do navegador com a sessão do LinkedIn |
-| `data/autoapply.db` | Banco SQLite com as vagas e as análises |
-| `vagas/` | Uma pasta por vaga do modo busca, com o `vaga.md` |
+| `data/autoapply.db` | Banco SQLite com as vagas, as análises, as tentativas de candidatura e as perguntas pendentes |
+| `vagas/` | Uma pasta por vaga do modo busca, com o `vaga.md`, o `respostas.md` e o seu `cv.docx` ou `cv.pdf` |
 | `logs/` | Log do dia em JSON Lines (`AAAA-MM-DD.log`), com e-mail e telefone mascarados |
-| `debug/` | Print e HTML de páginas inesperadas |
+| `debug/` | Print e HTML de páginas inesperadas e de falhas na candidatura; HTML da tela de sucesso de cada envio |
 
 ## Comandos
 
@@ -47,7 +47,12 @@ uv run autoapply login                  # abre o navegador para você logar à m
 uv run autoapply sessao [--visivel]     # confere se a sessão salva ainda vale
 uv run autoapply coletar [--visivel]    # coleta as vagas e grava no banco
 uv run autoapply buscar [--visivel]     # coleta, avalia e cria as pastas das 10 melhores vagas
-uv run autoapply vagas [--status <s>]   # mostra as vagas do banco (coletada, ignorada, avaliada, aguardando_cv)
+uv run autoapply vagas [--status <s>]   # mostra as vagas do banco (coletada, ignorada, avaliada, aguardando_cv,
+                                        # aplicada, falhou, pendente_pergunta)
+uv run autoapply aplicar <vaga> [--auto] [--simular] [--visivel]      # aplica numa vaga do modo busca (ID ou pasta)
+uv run autoapply aplicar --prontas [--auto] [--simular] [--visivel]   # aplica nas vagas com CV na pasta
+uv run autoapply rodar [--auto] [--sem-coleta] [--simular] [--visivel]  # modo normal: coleta, avalia e aplica
+uv run autoapply pendentes              # perguntas sem resposta que travaram candidaturas
 uv run autoapply --verbose <comando>    # mostra mensagens de depuração
 uv run autoapply --version
 ```
@@ -58,6 +63,7 @@ uv run autoapply --version
 | `login` | `0` sessão salva · `1` não logou em 5 min |
 | `sessao` | `0` sessão ativa · `1` sessão expirada · `3` verificação ou página inesperada (salva em `debug/`) |
 | `coletar` e `buscar` | `0` ok · `1` sessão expirada · `2` config inválido · `3` verificação ou página inesperada (salva em `debug/`) |
+| `aplicar` e `rodar` | Os mesmos de `coletar`, mais `2` para `<vaga>` não encontrada ou argumento faltando |
 
 O login é sempre manual: o sistema nunca guarda a sua senha e nunca tenta resolver CAPTCHA ou verificação. Quando aparece uma, ele para e avisa.
 
@@ -71,10 +77,19 @@ Uma nova execução não duplica vagas, não reanalisa as já avaliadas e não r
 
 O OpenCode lê a configuração de `$XDG_CONFIG_HOME` e `$XDG_DATA_HOME`. Se ele não achar o login ou os modelos ao rodar pelo `autoapply`, confira essas variáveis.
 
+## Candidaturas
+
+- **Modo busca:** salve o currículo adaptado na pasta da vaga como `cv.docx` ou `cv.pdf` (até 2 MB, com texto legível) e rode `aplicar <vaga>` ou `aplicar --prontas`. No `respostas.md` da pasta você pode responder perguntas só daquela vaga, além das linhas especiais `pretensão salarial` e `mensagem`. Essas respostas têm prioridade sobre o `config.md`.
+- **Modo normal:** `rodar` coleta e avalia como o `buscar` e aplica nas vagas sem pasta com score maior ou igual a `regras.score_minimo`, do maior score para o menor, com o currículo do `cv_base/` escolhido na análise. As vagas avaliadas abaixo do mínimo ficam `ignorada`, com o motivo. Com `--sem-coleta`, aplica direto nas vagas já avaliadas no banco.
+- **Envio:** com `--auto`, envia sem perguntar. Sem a flag, mostra as respostas preenchidas e pergunta `Enviar? [s/N]`; com "não", descarta o rascunho e não grava nada. O `--simular` percorre o formulário, nunca clica em Enviar e não grava nada no banco.
+- **Respostas:** contato vem do perfil; depois `respostas.md` da vaga, respostas padrão do `config.md`, pretensão pelo nível do título (CLT ou PJ), anos de experiência pelas tecnologias citadas na pergunta, o valor que o LinkedIn já trouxe preenchido e, em texto livre, a resposta genérica. Pergunta objetiva sem resposta não é chutada: a vaga vira `pendente_pergunta` e aparece em `pendentes`, que diz onde responder.
+- **Limite e ritmo:** no máximo `regras.limite_diario` candidaturas por dia, somando `aplicar` e `rodar`. Pausa de 2 a 6 s entre etapas do formulário e de 20 a 60 s entre candidaturas. O currículo sempre vai por upload e "Siga a empresa" é desmarcado.
+- **Segurança:** uma vaga já aplicada nunca é reenviada. Sem a tela de sucesso depois do Enviar, a vaga fica `falhou`, com dump em `debug/`, para você conferir à mão.
+
 ## Testes
 
 ```bash
 uv run pytest
 ```
 
-Os testes de sessão e de coleta usam o Chromium headless com páginas falsas e nunca acessam o LinkedIn de verdade. Os testes de LLM usam executáveis `claude` e `opencode` falsos.
+Os testes de sessão, de coleta e do Easy Apply usam o Chromium headless com páginas e um modal falsos, montados a partir de HTML real anonimizado, e nunca acessam o LinkedIn de verdade. Os testes de LLM usam executáveis `claude` e `opencode` falsos.

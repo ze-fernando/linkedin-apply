@@ -1,10 +1,10 @@
 # PRD: LinkedIn Auto-Apply
 
-**Status:** Em desenvolvimento (M2 concluído)
+**Status:** Em desenvolvimento (M3 concluído)
 **Autor:** Ze fernando
 **Criado em:** 2026-10-21
 **Atualizado em:** 2026-10-21
-**Versão:** 0.5
+**Versão:** 0.6
 
 ---
 
@@ -149,9 +149,9 @@ para que a candidatura use a minha versão.
 
 **Critérios de aceite:**
 
-- [ ] Dado um `cv.docx` ou `cv.pdf` na pasta da vaga, quando executo `aplicar <vaga>` (ou `aplicar --prontas`), então o sistema faz o Easy Apply com esse arquivo.
-- [ ] Na pasta da vaga posso incluir **informações específicas da vaga**, como respostas a perguntas daquela vaga, pretensão salarial diferente ou uma mensagem. Esses valores têm prioridade sobre o `config.md`.
-- [ ] Sem currículo na pasta, a vaga não é aplicada e continua `aguardando_cv`.
+- [x] Dado um `cv.docx` ou `cv.pdf` na pasta da vaga, quando executo `aplicar <vaga>` (ou `aplicar --prontas`), então o sistema faz o Easy Apply com esse arquivo.
+- [x] Na pasta da vaga posso incluir **informações específicas da vaga**, como respostas a perguntas daquela vaga, pretensão salarial diferente ou uma mensagem. Esses valores têm prioridade sobre o `config.md`.
+- [x] Sem currículo na pasta, a vaga não é aplicada e continua `aguardando_cv`.
 
 ### Épico 4: Modo normal (automático)
 
@@ -165,9 +165,9 @@ para que ele use o de maior match.
 
 **Critérios de aceite:**
 
-- [ ] Cada vaga recebe um score de 0 a 100 para cada currículo base, e o sistema escolhe o maior.
-- [ ] Vagas com score abaixo do mínimo do `config.md` são ignoradas e o motivo fica registrado.
-- [ ] Cada decisão tem uma justificativa curta: requisitos atendidos e requisitos faltantes.
+- [x] Cada vaga recebe um score de 0 a 100 para cada currículo base, e o sistema escolhe o maior.
+- [x] Vagas com score abaixo do mínimo do `config.md` são ignoradas e o motivo fica registrado.
+- [x] Cada decisão tem uma justificativa curta: requisitos atendidos e requisitos faltantes.
 
 #### História 4.2: Ajuste automático do currículo (P1)
 
@@ -194,12 +194,14 @@ para ganhar volume sem arriscar a conta.
 
 **Critérios de aceite:**
 
-- [ ] O sistema preenche o Easy Apply com dados do `config.md` e envia o currículo escolhido.
-- [ ] Dado que o limite diário foi atingido, nenhuma nova candidatura é enviada naquele dia.
-- [ ] Dado que o formulário traz uma pergunta de **texto livre** sem resposta específica, o sistema usa a resposta genérica do `config.md`.
-- [ ] Dado que o formulário traz uma pergunta **objetiva** (sim/não, número, seleção) sem resposta no `config.md`, a vaga **não é enviada**, a pergunta vai para uma lista de pendentes e a vaga fica para a próxima execução, depois que você responder.
-- [ ] Antes de enviar, o sistema confirma que ainda não aplicou nessa vaga.
-- [ ] Ao final, o sistema mostra um relatório com as vagas aplicadas, ignoradas, com falha e as perguntas pendentes.
+- [x] O sistema preenche o Easy Apply com dados do `config.md` e envia o currículo escolhido.
+- [x] Dado que o limite diário foi atingido, nenhuma nova candidatura é enviada naquele dia.
+- [x] Dado que o formulário traz uma pergunta de **texto livre** sem resposta específica, o sistema usa a resposta genérica do `config.md`.
+- [x] Dado que o formulário traz uma pergunta **objetiva** (sim/não, número, seleção) sem resposta no `config.md`, a vaga **não é enviada**, a pergunta vai para uma lista de pendentes e a vaga fica para a próxima execução, depois que você responder.
+- [x] Antes de enviar, o sistema confirma que ainda não aplicou nessa vaga.
+- [x] Ao final, o sistema mostra um relatório com as vagas aplicadas, ignoradas, com falha e as perguntas pendentes.
+
+Com `--auto`, `aplicar` e `rodar` enviam sem supervisão. Sem a flag, cada envio pede `Enviar? [s/N]` no terminal. Perguntas de experiência são respondidas pelos anos de `experiencia_anos` das tecnologias citadas na pergunta.
 
 ### Épico 5: Sessão e segurança
 
@@ -226,7 +228,7 @@ para testar as configurações com segurança.
 
 **Critérios de aceite:**
 
-- [ ] A flag `--simular` percorre o formulário até a última etapa e não clica em "Enviar".
+- [x] A flag `--simular` percorre o formulário até a última etapa e não clica em "Enviar".
 
 ### Épico 6: Execução e acompanhamento
 
@@ -240,13 +242,13 @@ para ver em tempo real o que está sendo feito.
 
 **Critérios de aceite:**
 
-- [ ] A ferramenta só roda quando você executa o comando. Não há agendamento.
-- [ ] O terminal mostra, com **Rich**, painéis e barras de progresso por etapa (login, coleta, match, aplicação).
-- [ ] Cada vaga gera uma linha colorida com status, empresa, cargo, score e currículo usado. Exemplo: `✔ Aplicada · Empresa X · Dev Python Pleno · score 82 · cv_base/padrao.docx`.
-- [ ] Mostra contadores ao vivo: aplicadas, ignoradas, falhas, pendentes e quanto resta do limite diário.
-- [ ] No fim, mostra uma tabela-resumo da execução.
-- [ ] O mesmo log é gravado em arquivo detalhado (com data e hora) em `logs/`, para consulta depois.
-- [ ] A flag `--verbose` mostra cada passo do formulário (campo preenchido, resposta usada e de onde veio a resposta).
+- [x] A ferramenta só roda quando você executa o comando. Não há agendamento.
+- [ ] O terminal mostra, com **Rich**, painéis e barras de progresso por etapa (login, coleta, match, aplicação). *(M3: indicador de status por etapa e tabelas; ainda sem barras de progresso.)*
+- [x] Cada vaga gera uma linha colorida com status, empresa, cargo, score e currículo usado. Exemplo: `✔ Aplicada · Empresa X · Dev Python Pleno · score 82 · cv_base/padrao.docx`.
+- [ ] Mostra contadores ao vivo: aplicadas, ignoradas, falhas, pendentes e quanto resta do limite diário. *(M3: aplicadas, pendentes, falhas e limite ao vivo; as ignoradas aparecem em linhas antes das candidaturas.)*
+- [x] No fim, mostra uma tabela-resumo da execução.
+- [x] O mesmo log é gravado em arquivo detalhado (com data e hora) em `logs/`, para consulta depois.
+- [x] A flag `--verbose` mostra cada passo do formulário (campo preenchido, resposta usada e de onde veio a resposta).
 
 ### Requisitos funcionais
 
@@ -270,7 +272,7 @@ para ver em tempo real o que está sendo feito.
 
 | ID      | Categoria          | Descrição                                                       | Meta                                               |
 | ------- | ------------------ | --------------------------------------------------------------- | -------------------------------------------------- |
-| NFR-001 | Segurança da conta | Intervalo aleatório entre ações                                 | 3 a 15 s entre ações; 1 a 3 min entre candidaturas |
+| NFR-001 | Segurança da conta | Intervalo aleatório entre ações                                 | 3 a 15 s na coleta; 2 a 6 s entre etapas do formulário; 20 a 60 s entre candidaturas |
 | NFR-002 | Segurança da conta | Limite diário de candidaturas (configurável)                    | Padrão: 15/dia                                     |
 | NFR-003 | Privacidade        | Senha só no `.env`; `config.md`, currículos e banco fora do git | Nenhum dado pessoal no repositório                 |
 | NFR-004 | Confiabilidade     | Execução retomável e sem candidatura duplicada                  | 0 duplicadas                                       |
@@ -337,7 +339,7 @@ cv_base/ ──┼─► [Coleta] ─► banco local ─► [Match] ─┬─►
 - **Match:** primeiro filtros por regras e pré-score por palavras-chave (baratos), depois LLM nas melhores vagas pelo CLI do Claude Code (`claude -p`) ou do OpenCode (`opencode run`), com retry, fallback entre provedores e, por último, análise simplificada por palavras-chave
 - **Ajuste de CV:** LLM (M4)
 - **Geração de PDF do CV ajustado:** a definir (ex.: template HTML → PDF)
-- **CLI:** comandos `validar`, `login`, `sessao`, `coletar`, `buscar` e `vagas` (prontos); `aplicar`, `rodar`, `pendentes` e `relatorio` (M3 e M4). Execução sempre manual.
+- **CLI:** comandos `validar`, `login`, `sessao`, `coletar`, `buscar`, `vagas`, `aplicar`, `rodar` e `pendentes` (prontos); `relatorio` (M4). Execução sempre manual.
 - **Terminal:** Rich (painéis, barras de progresso, tabelas e log colorido)
 
 ### Ciclo de vida da vaga
@@ -346,9 +348,11 @@ cv_base/ ──┼─► [Coleta] ─► banco local ─► [Match] ─┬─►
 
 No M2, a vaga cortada pelos filtros já na coleta (título, empresa, palavras ou sem Easy Apply) é gravada direto como `ignorada`, com o motivo.
 
+No M3, o `aprovada` não é usado: o `rodar` escolhe e aplica na mesma execução. Vaga que o LinkedIn já mostra como candidatada vira `aplicada` sem contar no limite. Cada tentativa (`aplicada`, `ja_aplicada`, `pendente`, `falhou`) fica no histórico do banco.
+
 ### Dados e privacidade
 
-- O `config.md`, os currículos e o banco ficam só na máquina local e no `.gitignore`.
+- O `config.md`, os currículos e o banco ficam só na máquina local e no `.gitignore`. O repositório traz só o `config.example.md`, com dados fictícios.
 - Só o texto da vaga e do currículo, os níveis e os anos de experiência são enviados ao LLM. Telefone e e-mail são mascarados antes do envio; endereço e documentos não são enviados.
 
 ---
@@ -376,7 +380,7 @@ No M2, a vaga cortada pelos filtros já na coleta (título, empresa, palavras ou
 | M0: Currículo ✔   | Análise do `cv.docx` original, pesquisa de vagas remotas no Brasil, recomendação de focos e **v2 melhorada** em `cv_base/` como padrão | 0 (antes de implementar) |
 | M1: Base ✔        | `config.md`, currículos, login persistente (`validar`, `login`, `sessao`) | 1      |
 | M2: Leitura ✔     | Coleta + match + **modo busca** completo (`coletar`, `buscar`, `vagas`)        | 2      |
-| M3: Aplicação     | Easy Apply (com CV adaptado e no modo normal) + limite + pendentes + simulação | 3      |
+| M3: Aplicação ✔   | Easy Apply (com CV adaptado e no modo normal) + limite + pendentes + simulação | 3      |
 | M4: Ajuste por IA | Ajuste automático do CV com verificação + relatório                            | 4      |
 
 ---

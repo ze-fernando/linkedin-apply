@@ -1,6 +1,6 @@
 # Spec técnica — M3: Aplicação
 
-**Status:** Aprovado · **Atualizado:** 2026-10-21
+**Status:** Concluído · **Atualizado:** 2026-10-21
 **PRD:** [../PRD.md](../PRD.md) — História 3.2 (aplicar com o CV adaptado), Histórias 4.1 e 4.3 (modo normal), História 5.2 (simulação), Épico 6 (logs e resumo), FR-007, FR-008, FR-009, FR-012, NFR-001, NFR-002, NFR-004, NFR-005
 **Base:** [M1-base.md](M1-base.md) (config, sessão, logs) e [M2-leitura.md](M2-leitura.md) (coleta, avaliação, modo busca)
 
@@ -235,7 +235,7 @@ O LinkedIn real **nunca** é chamado nos testes, e a trava de rede do M1 continu
 - [x] **T5 — `aplicar` e runner.** Limite, ritmo, linhas e resumo. Migração: registra em `job_folders` as pastas criadas no M2 (ID lido do link no `vaga.md`). _Pronto:_ testes passam e o comando trata argumentos, migração e vaga sem CV.
 - [x] **T6 — `rodar` e `--auto`.** Seleção por score, ignoradas por score mínimo, confirmação antes do envio e `--auto`. _Pronto:_ a primeira candidatura real é enviada; a tela de sucesso e a vaga já aplicada são capturadas e viram fixture.
 - [x] **T7 — `pendentes`.**
-- [ ] **T8 — Fechamento.** README e PRD.
+- [x] **T8 — Fechamento.** README e PRD.
 
 Ordem: T1 → T8. TDD, com as seams combinadas antes de cada tarefa, e um commit por tarefa na `develop`.
 
