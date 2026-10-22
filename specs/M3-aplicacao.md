@@ -27,27 +27,28 @@ Explorado em 2026-10-21 em 7 vagas reais do banco, sem nunca clicar em "Enviar":
 - **Modal:** `[role=dialog].jobs-easy-apply-modal`. O título da etapa fica no `h3` ("Informações de contato", "Currículo", "Perguntas adicionais", "Revise sua candidatura"), e o texto acompanha o idioma da vaga ("Resume", "Additional Questions", "Información de contacto", "Currículum").
 - **Botões do rodapé** (atributos estáveis, independentes do idioma):
 
-| Ação | Seletor |
-|---|---|
-| Avançar | `button[data-easy-apply-next-button]` |
+| Ação    | Seletor                                           |
+| ------- | ------------------------------------------------- |
+| Avançar | `button[data-easy-apply-next-button]`             |
 | Revisar | `button[data-live-test-easy-apply-review-button]` |
-| Enviar | `button[data-live-test-easy-apply-submit-button]` |
-| Fechar | `button[data-test-modal-close-btn]` |
+| Enviar  | `button[data-live-test-easy-apply-submit-button]` |
+| Fechar  | `button[data-test-modal-close-btn]`               |
 
 - Fechar o modal abre "Salvar esta candidatura?" com **Descartar** e **Salvar**. O sistema sempre descarta.
 - **Número de etapas varia:** de 1 (contato + currículo + Enviar na mesma tela) a 5 (contato, currículo, experiência, formação, revisão). As etapas de experiência e formação vêm preenchidas pelo perfil e só têm Editar/Remover.
 - **Campos:** cada um fica num `.fb-dash-form-element`. O tipo sai do `id`:
 
-| `id` contém | Tipo | Observação |
-|---|---|---|
-| `single-line-text-form-component` … `-numeric` | número | validação "inteiro de 0 a 99" ou "decimal maior que 0" |
-| `single-line-text-form-component` … `-text` | texto curto | ex.: First name |
-| `single-line-text-form-component` … `-phoneNumber-nationalNumber` | telefone | |
-| `text-entity-list-form-component` … `-phoneNumber-country` | select do código do país | |
-| `text-entity-list-form-component` … `-multipleChoice` | select | ex.: e-mail, nível de inglês, Yes/No |
-| `radio-button-form-component` | rádio | `fieldset` com `legend`; cada opção tem `data-test-text-selectable-option__input="<texto>"` |
+| `id` contém                                                       | Tipo                     | Observação                                                                                  |
+| ----------------------------------------------------------------- | ------------------------ | ------------------------------------------------------------------------------------------- |
+| `single-line-text-form-component` … `-numeric`                    | número                   | validação "inteiro de 0 a 99" ou "decimal maior que 0"                                      |
+| `single-line-text-form-component` … `-text`                       | texto curto              | ex.: First name                                                                             |
+| `single-line-text-form-component` … `-phoneNumber-nationalNumber` | telefone                 |                                                                                             |
+| `text-entity-list-form-component` … `-phoneNumber-country`        | select do código do país |                                                                                             |
+| `text-entity-list-form-component` … `-multipleChoice`             | select                   | ex.: e-mail, nível de inglês, Yes/No                                                        |
+| `radio-button-form-component`                                     | rádio                    | `fieldset` com `legend`; cada opção tem `data-test-text-selectable-option__input="<texto>"` |
 
-  O rótulo vem do `label[for=<id>]` ou do `legend`. A legenda do rádio termina com "Obrigatório", que deve ser removido. Não apareceram textarea, checkbox de pergunta nem autocompletar (cidade); eles são tratados na seção 7.4.
+O rótulo vem do `label[for=<id>]` ou do `legend`. A legenda do rádio termina com "Obrigatório", que deve ser removido. Não apareceram textarea, checkbox de pergunta nem autocompletar (cidade); eles são tratados na seção 7.4.
+
 - **Erros de validação:** `.artdeco-inline-feedback--error` dentro do modal, por exemplo "Enter a whole number between 0 and 99".
 - **Pré-preenchimento:** o LinkedIn reaproveita respostas suas de candidaturas anteriores. Muitos campos vêm preenchidos (inclusive rádios e números) e outros vêm vazios.
 - **Os valores atuais não estão no HTML:** `value`, `checked` e a opção selecionada só existem como propriedades do DOM. Antes de ler uma etapa, um JS copia esses valores para `data-autoapply-value` (texto e opção selecionada) e `data-autoapply-checked` (rádio). O parsing é uma função pura sobre esse HTML.
@@ -125,13 +126,13 @@ CREATE TABLE IF NOT EXISTS pending_questions (
    1. Lê o HTML do modal e extrai os campos (seção 2).
    2. Resolve a resposta de cada campo (seção 7). Se algum campo obrigatório ficar sem resposta, junta as pendentes da etapa, descarta o rascunho e devolve `pendente`.
    3. Preenche só o que precisa mudar: número e texto com `fill`, select com `select_option` pelo texto da opção, rádio com clique no `label` da opção.
-   4. **Etapa de currículo:** faz upload do arquivo escolhido pelo `input[type=file]`. A conferência de que ele aparece selecionado fica para a T5, com a captura real.
+   4. **Etapa de currículo:** faz upload do arquivo escolhido pelo `input[type=file]`. A conferência de que ele aparece selecionado fica para a T6, com a captura real.
    5. Clica em Avançar ou Revisar. Se aparecer erro de validação, salva o dump e devolve `falhou` com o texto do erro.
 4. **Revisão:** desmarca "Siga a empresa".
-5. **Envio:** clica em Enviar. Com `--simular`, para aqui: não clica, descarta e devolve `simulada`.
-6. **Confirmação:** espera a tela de sucesso (a capturar na T4). Sem confirmação em 15 s, salva o dump e devolve `falhou`; o status `falhou` impede reenvio automático e você confere à mão.
-7. **Ritmo (NFR-001):** espera de 3 a 15 s entre etapas e de 1 a 3 min entre candidaturas. As duas esperas são injetáveis.
-8. **Segurança:** o clique em Enviar só existe no passo 5 e só quando a execução não é simulação. Checkpoint ou login no meio interrompem tudo (`CheckpointDetected`/`SessionExpired`), como na coleta.
+5. **Envio:** com `--simular`, para aqui: não clica, descarta e devolve `simulada`. Com `--auto`, clica em Enviar direto. Sem `--auto`, mostra no terminal a vaga e as respostas preenchidas e pergunta `Enviar? [s/N]`; com "não", descarta o rascunho e devolve `recusada`, sem gravar nada no banco.
+6. **Confirmação:** espera a tela de sucesso ("Candidatura enviada" ou "Sua candidatura na <empresa> foi enviada", capturada na T6) e salva o HTML do diálogo em `debug/<data-hora>-sucesso-<id>/`. Sem confirmação em 15 s, salva o dump e devolve `falhou`; o status `falhou` impede reenvio automático e você confere à mão.
+7. **Ritmo (NFR-001):** espera de 2 a 6 s entre etapas do formulário e de 20 a 60 s entre candidaturas. A coleta mantém 3 a 15 s entre ações. As duas esperas são injetáveis.
+8. **Segurança:** o clique em Enviar só existe no passo 5, só fora da simulação e só com `--auto` ou com o seu "s". Checkpoint ou login no meio interrompem tudo (`CheckpointDetected`/`SessionExpired`), como na coleta.
 
 ## 7. Respostas (`answering.py`, `answer_rules.py`)
 
@@ -151,7 +152,8 @@ Para cada campo, a primeira fonte que responder vence. A fonte vai para o log, e
 
 - Padrões em português, inglês e espanhol, por exemplo "Quantos anos de experiência (você tem) com X", "How many years of (work) experience do you have with X", "Cuántos años de experiencia tienes con X".
 - X é comparado às chaves de `experiencia_anos`, sem acento e sem diferença de maiúsculas, inteiro ("ASP.NET Core" não casa com "ASP.NET").
-- X fora de `experiencia_anos` → pendente (só quando o campo não veio pré-preenchido; ver 7.1).
+- X fora de `experiencia_anos` → passa para a busca por palavras-chave abaixo.
+- **Palavras-chave na pergunta:** em pergunta de experiência (cita "experiência", "conhecimento", "anos", "atuou" e equivalentes em inglês), procura todas as chaves de `experiencia_anos` com 3 ou mais caracteres, por palavra inteira. Número → o maior número de anos entre as encontradas. Sim/não → "Sim" se esse maior número alcança o mínimo citado ("mais de 3 anos" exige mais que 3; "pelo menos 2", "at least 2" e "2+ anos" exigem 2 ou mais; sem número, basta 1 ano), senão "Não". Sem nenhuma chave encontrada → pendente (só quando o campo não veio pré-preenchido; ver 7.1).
 
 ### 7.3 Pretensão salarial
 
@@ -173,8 +175,8 @@ Para cada campo, a primeira fonte que responder vence. A fonte vai para o log, e
 ### 8.1 `aplicar` (modo busca)
 
 ```
-autoapply aplicar <vaga> [--simular] [--visivel]   # <vaga> = ID ou nome da pasta em vagas/
-autoapply aplicar --prontas [--simular] [--visivel]
+autoapply aplicar <vaga> [--auto] [--simular] [--visivel]   # <vaga> = ID ou nome da pasta em vagas/
+autoapply aplicar --prontas [--auto] [--simular] [--visivel]
 ```
 
 - `--prontas`: vagas com pasta, em `aguardando_cv` ou `pendente_pergunta`, que já têm `cv.docx` ou `cv.pdf` na pasta.
@@ -185,13 +187,15 @@ autoapply aplicar --prontas [--simular] [--visivel]
 ### 8.2 `rodar` (modo normal)
 
 ```
-autoapply rodar [--simular] [--visivel]
+autoapply rodar [--auto] [--sem-coleta] [--simular] [--visivel]
 ```
 
-1. Coleta e avaliação, como no `buscar`.
+`--auto` vale para `aplicar` e `rodar`: as candidaturas são enviadas sem supervisão. Sem a flag, cada envio pede confirmação no terminal (seção 6, passo 5).
+
+1. Coleta e avaliação, como no `buscar`. Com `--sem-coleta`, pula as duas e usa as vagas já avaliadas no banco.
 2. **Candidatas:** vagas sem pasta, em `avaliada` ou `pendente_pergunta`, com score ≥ `regras.score_minimo`, maior score primeiro. Vale o score do LLM ou o da análise por palavras-chave (decisão 2).
 3. Vagas `avaliada` abaixo do mínimo → `ignorada`, com o motivo "score X abaixo do mínimo Y" (História 4.1).
-4. Currículo: o arquivo do `cv_base/` do currículo escolhido na análise. Com `regras.ajuste_cv_ia: true`, o terminal avisa que o ajuste só chega no M4 e usa o currículo base.
+4. Currículo: o arquivo do `cv_base/` do currículo escolhido na análise. Se esse currículo não estiver mais no `config.md`, usa o padrão e avisa na linha da vaga. Com `regras.ajuste_cv_ia: true`, o terminal avisa que o ajuste só chega no M4 e usa o currículo base.
 5. Aplica até o limite diário.
 
 ### 8.3 `pendentes`
@@ -211,14 +215,14 @@ Tabela com pergunta, tipo, opções do formulário, vagas afetadas e onde respon
 
 ## 9. Testes
 
-| Área | Como |
-|---|---|
-| Parsing do formulário | HTML de etapa escrito à mão em `tests/fixtures/pages/`, a partir da estrutura real e sem dados pessoais: contato, currículo, perguntas (número, select, rádio, texto), revisão |
-| Regras e respostas | Funções puras: ordem das fontes, anos e pretensão em pt/en/es, opção sim/não entre idiomas, moeda estrangeira, pendente |
-| `respostas.md` | Arquivo em `tmp_path`: prioridade sobre o config, `pretensão salarial`, `mensagem`, erro de formato |
-| Banco | Tentativas, pendentes regravadas, contagem do dia, pastas |
-| Motor | Chromium headless com um modal falso em `tests/fakes/` (etapas, validação, descarte, envio). O Enviar falso registra o clique: o teste de `--simular` confere que ele nunca é clicado; vaga com pendente descarta; tipo desconhecido falha com dump; vaga já aplicada não abre; upload chega ao input |
-| Runner | Limite diário, ordem por score, score mínimo vira `ignorada`, esperas injetadas |
+| Área                  | Como                                                                                                                                                                                                                                                                                                  |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Parsing do formulário | HTML de etapa escrito à mão em `tests/fixtures/pages/`, a partir da estrutura real e sem dados pessoais: contato, currículo, perguntas (número, select, rádio, texto), revisão                                                                                                                        |
+| Regras e respostas    | Funções puras: ordem das fontes, anos e pretensão em pt/en/es, opção sim/não entre idiomas, moeda estrangeira, pendente                                                                                                                                                                               |
+| `respostas.md`        | Arquivo em `tmp_path`: prioridade sobre o config, `pretensão salarial`, `mensagem`, erro de formato                                                                                                                                                                                                   |
+| Banco                 | Tentativas, pendentes regravadas, contagem do dia, pastas                                                                                                                                                                                                                                             |
+| Motor                 | Chromium headless com um modal falso em `tests/fakes/` (etapas, validação, descarte, envio). O Enviar falso registra o clique: o teste de `--simular` confere que ele nunca é clicado; vaga com pendente descarta; tipo desconhecido falha com dump; vaga já aplicada não abre; upload chega ao input |
+| Runner                | Limite diário, ordem por score, score mínimo vira `ignorada`, esperas injetadas                                                                                                                                                                                                                       |
 
 O LinkedIn real **nunca** é chamado nos testes, e a trava de rede do M1 continua valendo.
 
@@ -227,9 +231,9 @@ O LinkedIn real **nunca** é chamado nos testes, e a trava de rede do M1 continu
 - [x] **T1 — Banco e pastas.** Status novos, tabelas novas, `job_folders` e `respostas.md` no `buscar`.
 - [x] **T2 — Parsing do formulário.** Fixtures e `form_parsing.py`.
 - [x] **T3 — Respostas.** `job_answers.py`, `answer_rules.py` e `answering.py`.
-- [x] **T4 — Motor do Easy Apply.** Modal falso, preenchimento, upload, simulação, descarte e dump. *Pronto:* testes passam e `--simular` percorre 3 vagas reais até a revisão.
-- [ ] **T5 — `aplicar` e runner.** Limite, ritmo, linhas e resumo. Migração: registra em `job_folders` as pastas criadas no M2 (ID lido do link no `vaga.md`). *Pronto:* uma candidatura real autorizada por você; a tela de sucesso e a vaga já aplicada são capturadas e viram fixture.
-- [ ] **T6 — `rodar`.** Seleção por score, ignoradas por score mínimo.
+- [x] **T4 — Motor do Easy Apply.** Modal falso, preenchimento, upload, simulação, descarte e dump. _Pronto:_ testes passam e `--simular` percorre 3 vagas reais até a revisão.
+- [x] **T5 — `aplicar` e runner.** Limite, ritmo, linhas e resumo. Migração: registra em `job_folders` as pastas criadas no M2 (ID lido do link no `vaga.md`). _Pronto:_ testes passam e o comando trata argumentos, migração e vaga sem CV.
+- [x] **T6 — `rodar` e `--auto`.** Seleção por score, ignoradas por score mínimo, confirmação antes do envio e `--auto`. _Pronto:_ a primeira candidatura real é enviada; a tela de sucesso e a vaga já aplicada são capturadas e viram fixture.
 - [ ] **T7 — `pendentes`.**
 - [ ] **T8 — Fechamento.** README e PRD.
 
@@ -248,9 +252,16 @@ Confirmadas em 2026-10-21:
 7. O currículo sempre vai por upload.
 8. "Siga a empresa" é desmarcado.
 9. Anos de experiência com tecnologia fora de `experiencia_anos` vira pendente.
-10. O limite diário soma `aplicar` e `rodar`; o `--simular` não conta. Espera de 1 a 3 min entre candidaturas.
+10. O limite diário soma `aplicar` e `rodar`; o `--simular` não conta. Espera de 20 a 60 s entre candidaturas e de 2 a 6 s entre etapas (revisto na T6; antes 1 a 3 min e 3 a 15 s).
 11. Pretensão: nível pelo título (ou `padrao_nivel`), PJ quando a pergunta cita PJ, senão CLT; outra moeda vira pendente.
 12. Campo de tipo desconhecido: se for obrigatório, a vaga vira `falhou` com dump; se for opcional, fica em branco e vai para o log.
 13. Texto curto obrigatório sem resposta vira pendente; só textarea recebe a resposta genérica.
 14. Sem confirmação depois do Enviar, a vaga fica `falhou` para conferência manual, nunca `aplicada`.
 15. O `--simular` não grava nada no banco (nem status nem pendentes); só mostra o resultado no terminal.
+16. Vaga que o LinkedIn já mostra como candidatada vira tentativa `ja_aplicada` e status `aplicada`, sem contar no limite.
+17. O `--simular` ignora o limite diário, já que não envia nada.
+18. Com `--auto`, `aplicar` e `rodar` enviam sem supervisão nem autorização por vaga. Sem a flag, cada envio pede `Enviar? [s/N]` no terminal; "não" descarta o rascunho e não grava nada.
+19. No `rodar`, se o currículo escolhido na análise sumiu do `config.md`, usa o padrão e avisa.
+20. Perguntas de experiência também são respondidas pelas tecnologias citadas na pergunta (seção 7.2), só com chaves de 3 ou mais caracteres.
+21. O `rodar --sem-coleta` aplica direto nas vagas já avaliadas, sem coleta nem avaliação.
+22. As 5 candidaturas da primeira execução real, enviadas mas marcadas `falhou` porque o texto de sucesso não foi reconhecido, foram corrigidas no banco para `aplicada`.

@@ -200,3 +200,28 @@ def test_run_applications_in_simulation_ignores_the_limit_and_writes_nothing(
     }
     assert count_applied_on(connection, date(2026, 10, 21)) == 1
     assert list_pending_questions(connection) == []
+
+
+def test_run_applications_does_not_record_a_declined_submission(
+    connection: sqlite3.Connection, valid_data: dict[str, object], base_dir: Path, build_job: Callable[..., Job]
+) -> None:
+    candidates = prepare_candidates(connection, build_job, ["recusada"])
+    calls = []
+    apply = build_apply({"recusada": build_result(ApplicationOutcome.DECLINED)}, calls)
+
+    summary = run_applications(
+        connection,
+        build_config(valid_data, base_dir, daily_limit=15),
+        candidates,
+        ApplyMode.NORMAL,
+        False,
+        apply,
+        lambda: None,
+        lambda: NOW,
+        lambda entry: None,
+    )
+
+    assert [entry.result.outcome for entry in summary.entries] == [ApplicationOutcome.DECLINED]
+    assert read_statuses(connection) == {"recusada": JobStatus.AWAITING_RESUME}
+    assert has_applied(connection, "recusada") is False
+    assert list_pending_questions(connection) == []

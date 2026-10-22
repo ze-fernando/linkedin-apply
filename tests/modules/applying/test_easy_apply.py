@@ -1,4 +1,5 @@
 import copy
+import dataclasses
 from collections.abc import Callable
 from pathlib import Path
 
@@ -51,7 +52,11 @@ def run_application(
     resume_file: Path,
     tmp_path: Path,
 ) -> Callable[..., tuple[ApplicationResult, dict[str, object], Page]]:
-    def run(application: FakeApplication, simulate: bool = False) -> tuple[ApplicationResult, dict[str, object], Page]:
+    def run(
+        application: FakeApplication,
+        simulate: bool = False,
+        confirm_submit: Callable[[Job, list[tuple[str, str]]], bool] = lambda job, answers: True,
+    ) -> tuple[ApplicationResult, dict[str, object], Page]:
         serve_pages({"/jobs/search/": build_apply_page(application)})
         page = browser_context.pages[0]
         result = apply_to_job(
@@ -60,6 +65,7 @@ def run_application(
             resume_file,
             context,
             simulate=simulate,
+            confirm_submit=confirm_submit,
             wait=lambda: None,
             debug_dir=tmp_path / "debug",
             timeout_ms=2000,
@@ -105,6 +111,55 @@ def test_apply_to_job_fills_every_step_uploads_resume_unfollows_and_submits(
         "radio-pj": "Sim",
         SELECT_ID.format("english"): "Professional",
     }
+
+
+def test_apply_to_job_saves_the_success_dialog_html_in_debug(
+    run_application: Callable[..., tuple[ApplicationResult, dict[str, object], Page]], tmp_path: Path
+) -> None:
+    result, _, _ = run_application(full_application())
+
+    [dialog_file] = list((tmp_path / "debug").glob(f"*-sucesso-{JOB_ID}/dialog.html"))
+    assert result.outcome == ApplicationOutcome.APPLIED
+    assert "Sua candidatura na Empresa Teste foi enviada" in dialog_file.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("success_page", ["easy_apply_success.html", "easy_apply_success_next_action.html"])
+def test_apply_to_job_recognizes_each_real_success_dialog(
+    run_application: Callable[..., tuple[ApplicationResult, dict[str, object], Page]], success_page: str
+) -> None:
+    application = dataclasses.replace(full_application(), success_page=success_page)
+
+    result, log, _ = run_application(application)
+
+    assert (result.outcome, log["submitted"]) == (ApplicationOutcome.APPLIED, True)
+
+
+def test_apply_to_job_declined_at_confirmation_shows_answers_never_submits_and_discards(
+    run_application: Callable[..., tuple[ApplicationResult, dict[str, object], Page]],
+) -> None:
+    confirmations = []
+
+    def decline(job: Job, answers: list[tuple[str, str]]) -> bool:
+        confirmations.append((job.id, answers))
+        return False
+
+    result, log, page = run_application(full_application(), confirm_submit=decline)
+
+    assert result == ApplicationResult(outcome=ApplicationOutcome.DECLINED, reason=None, pending_fields=[])
+    assert (log["submitted"], log["discarded"]) == (False, True)
+    assert page.locator(".jobs-easy-apply-modal").count() == 0
+    assert confirmations == [
+        (
+            JOB_ID,
+            [
+                ("Número de celular", "11912345678"),
+                ("E-mail", "maria.teste@example.com"),
+                ("How many years of work experience do you have with Python?", "3"),
+                ("Aceita PJ?", "Sim"),
+                ("Nível de inglês", "Professional"),
+            ],
+        )
+    ]
 
 
 def test_apply_to_job_simulation_reaches_review_never_submits_and_discards(

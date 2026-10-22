@@ -1,6 +1,7 @@
 import logging
 import re
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 
 from playwright.sync_api import Error as PlaywrightError
@@ -38,10 +39,13 @@ MODAL_SELECTOR = ".jobs-easy-apply-modal"
 CLOSE_SELECTOR = f"{MODAL_SELECTOR} button[data-test-modal-close-btn]"
 DISCARD_SELECTOR = 'button[data-control-name="discard_application_confirm_btn"]'
 RADIO_OPTION_SELECTOR = '[id="{group_id}"] input[data-test-text-selectable-option__input="{option}"]'
-SUCCESS_PATTERN = r"candidatura foi enviada|application was sent|solicitud fue enviada"
+SUCCESS_PATTERN = (
+    r"candidatura .{0,150}foi enviada|candidatura enviada|application .{0,150}was sent|solicitud .{0,150}enviada"
+)
 MAX_STEPS = 12
 TEXT_KINDS = {FieldKind.TEXT, FieldKind.NUMBER, FieldKind.PHONE, FieldKind.FREE_TEXT}
 SELECT_KINDS = {FieldKind.SELECT, FieldKind.PHONE_COUNTRY}
+ANSWERED_ACTIONS = {DecisionAction.FILL, DecisionAction.KEEP}
 SYNC_FORM_STATE_SCRIPT = """
 (modal) => {
   for (const element of modal.querySelectorAll("input, textarea, select")) {
@@ -63,6 +67,9 @@ MODAL_CHANGED_SCRIPT = """
   const modal = document.querySelector(selector);
   return !modal || modal.innerHTML !== before;
 }
+"""
+DIALOGS_HTML_SCRIPT = """
+() => [...document.querySelectorAll("[role=dialog]")].map((dialog) => dialog.outerHTML).join("\\n")
 """
 SUCCESS_SCRIPT = f"""
 () => [...document.querySelectorAll("[role=dialog]")].some((dialog) => /{SUCCESS_PATTERN}/i.test(dialog.innerText))
@@ -135,13 +142,20 @@ def fail(page: Page, reason: str, debug_dir: Path, timeout_ms: int, discard: boo
     return result(ApplicationOutcome.FAILED, reason)
 
 
-def submit_application(page: Page, debug_dir: Path, timeout_ms: int) -> ApplicationResult:
+def save_success_dialog(page: Page, job: Job, debug_dir: Path) -> None:
+    dump_dir = debug_dir / f"{datetime.now():%Y%m%d-%H%M%S}-sucesso-{job.id}"
+    dump_dir.mkdir(parents=True, exist_ok=True)
+    (dump_dir / "dialog.html").write_text(page.evaluate(DIALOGS_HTML_SCRIPT), encoding="utf-8")
+
+
+def submit_application(page: Page, job: Job, debug_dir: Path, timeout_ms: int) -> ApplicationResult:
     page.locator(ACTION_SELECTORS[StepAction.SUBMIT]).click(timeout=timeout_ms)
     try:
         page.wait_for_function(SUCCESS_SCRIPT, timeout=timeout_ms)
     except PlaywrightError:
         reason = "sem confirmação de envio; confira à mão no LinkedIn"
         return fail(page, reason, debug_dir, timeout_ms, discard=False)
+    save_success_dialog(page, job, debug_dir)
     return result(ApplicationOutcome.APPLIED)
 
 
@@ -171,12 +185,21 @@ def open_application(page: Page, job: Job, timeout_ms: int) -> ApplicationResult
     return None
 
 
+def list_answers(decisions: list[tuple[FormField, FieldDecision]]) -> list[tuple[str, str]]:
+    return [
+        (field.label, decision.value)
+        for field, decision in decisions
+        if decision.action in ANSWERED_ACTIONS and decision.value is not None
+    ]
+
+
 def apply_to_job(
     page: Page,
     job: Job,
     resume_file: Path,
     context: AnswerContext,
     simulate: bool,
+    confirm_submit: Callable[[Job, list[tuple[str, str]]], bool],
     wait: Callable[[], None],
     debug_dir: Path,
     timeout_ms: int = 15000,
@@ -184,6 +207,7 @@ def apply_to_job(
     blocked = open_application(page, job, timeout_ms)
     if blocked is not None:
         return blocked
+    answers = []
     for _ in range(MAX_STEPS):
         step = read_current_step(page)
         if step.errors:
@@ -199,13 +223,17 @@ def apply_to_job(
             discard_application(page, timeout_ms)
             return result(ApplicationOutcome.PENDING, "perguntas sem resposta", pending_fields)
         fill_step(page, decisions)
+        answers.extend(list_answers(decisions))
         prepare_step(page, step, resume_file)
         if step.action is None:
             return fail(page, "etapa sem botão de avançar ou enviar", debug_dir, timeout_ms)
         if step.action == StepAction.SUBMIT and simulate:
             discard_application(page, timeout_ms)
             return result(ApplicationOutcome.SIMULATED)
+        if step.action == StepAction.SUBMIT and not confirm_submit(job, answers):
+            discard_application(page, timeout_ms)
+            return result(ApplicationOutcome.DECLINED)
         if step.action == StepAction.SUBMIT:
-            return submit_application(page, debug_dir, timeout_ms)
+            return submit_application(page, job, debug_dir, timeout_ms)
         advance(page, step.action, wait, timeout_ms)
     return fail(page, "formulário com etapas demais", debug_dir, timeout_ms)

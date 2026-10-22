@@ -4,7 +4,10 @@ from autoapply.modules.applying.answer_rules import (
     choose_salary,
     find_experience_technology,
     find_experience_years,
+    find_question_technology_years,
     find_salary_question,
+    has_minimum_experience,
+    is_experience_question,
 )
 from autoapply.modules.applying.models import (
     AnswerContext,
@@ -20,6 +23,8 @@ from autoapply.shared.text import normalize_text
 CHOICE_KINDS = {FieldKind.SELECT, FieldKind.RADIO, FieldKind.PHONE_COUNTRY}
 YES_WORDS = {"sim", "yes", "si"}
 NO_WORDS = {"nao", "no"}
+YES_ANSWER = "Sim"
+NO_ANSWER = "Não"
 NUMBER_PATTERN = re.compile(r"^\d+(?:[.,]\d+)?$")
 JOB_SALARY_KEY = "pretensao salarial"
 JOB_MESSAGE_KEY = "mensagem"
@@ -87,6 +92,19 @@ def find_experience_answer(field: FormField, context: AnswerContext) -> tuple[An
     return None if years is None else (AnswerSource.RULE, str(years))
 
 
+def find_keyword_experience_answer(field: FormField, context: AnswerContext) -> tuple[AnswerSource, str] | None:
+    if not is_experience_question(field.label):
+        return None
+    years = find_question_technology_years(field.label, context.config.experiencia_anos)
+    if not years:
+        return None
+    if field.kind == FieldKind.NUMBER:
+        return AnswerSource.RULE, str(max(years))
+    if field.kind in CHOICE_KINDS:
+        return AnswerSource.RULE, YES_ANSWER if has_minimum_experience(field.label, max(years)) else NO_ANSWER
+    return None
+
+
 def find_country_option(field: FormField, phone: str) -> str | None:
     code = COUNTRY_CODE_PATTERN.match(phone.strip())
     if code is None:
@@ -137,7 +155,7 @@ def resolve_field(field: FormField, context: AnswerContext) -> FieldDecision:
     contact_decision = resolve_contact_field(field, context)
     if contact_decision is not None:
         return contact_decision
-    for find_answer in (find_stored_answer, find_salary_answer, find_experience_answer):
+    for find_answer in (find_stored_answer, find_salary_answer, find_experience_answer, find_keyword_experience_answer):
         found = find_answer(field, context)
         if found is not None:
             source, answer = found

@@ -18,9 +18,15 @@ from autoapply.modules.config.loader import parse_config_data
 
 @pytest.fixture
 def build_context(valid_data: dict[str, object], base_dir: Path) -> Callable[..., AnswerContext]:
-    def build(job_answers: dict[str, str] | None = None, job_title: str = "Desenvolvedor Python Pleno") -> AnswerContext:
+    def build(
+        job_answers: dict[str, str] | None = None,
+        job_title: str = "Desenvolvedor Python Pleno",
+        experience: dict[str, int] | None = None,
+    ) -> AnswerContext:
         data = copy.deepcopy(valid_data)
         data["respostas"] = {"aceita pj": "Sim", "aceita trabalhar remotamente": "Sim"}
+        if experience is not None:
+            data["experiencia_anos"] = experience
         return AnswerContext(
             config=parse_config_data(data, base_dir),
             job_answers=job_answers or {},
@@ -175,3 +181,73 @@ def test_resolve_field_unknown_kind_fails_only_when_required(build_context: Call
 
     assert resolve_field(required, build_context()).action == DecisionAction.FAIL
     assert resolve_field(optional, build_context()).action == DecisionAction.SKIP
+
+
+KEYWORD_EXPERIENCE = {
+    "total_desenvolvimento": 5,
+    "SQL": 5,
+    "Python": 5,
+    "R": 0,
+    "Go": 4,
+    "APIs REST": 5,
+    "Webhooks": 0,
+    "CI/CD": 5,
+    "RPA": 3,
+    "Linux": 2,
+    "Kotlin": 0,
+}
+
+
+@pytest.mark.parametrize(
+    ("kind", "label", "expected"),
+    [
+        (FieldKind.SELECT, "Você possui nível avançado, mais de 3 anos de experiência, em SQL?", "Yes"),
+        (
+            FieldKind.SELECT,
+            "Você possui nível avançado, mais de 3 anos de experiência, em Python (ou ferramenta equivalente de "
+            "análise de dados, como R)",
+            "Yes",
+        ),
+        (
+            FieldKind.SELECT,
+            "Você possui experiência com integração de sistemas por meio de APIs REST, webhooks e bancos de dados?",
+            "Yes",
+        ),
+        (
+            FieldKind.SELECT,
+            "Você possui conhecimentos ou experiência em práticas de DevOps, como automação, integração e entrega "
+            "contínua (CI/CD) e gerenciamento de ambientes?",
+            "Yes",
+        ),
+        (FieldKind.SELECT, "Do you have at least 2 years of experience with Linux?", "Yes"),
+        (FieldKind.SELECT, "Você possui mais de 2 anos de experiência com Linux?", "No"),
+        (FieldKind.SELECT, "Você possui experiência com Kotlin?", "No"),
+        (FieldKind.NUMBER, "Possui quantos anos de experiência em Linux, RPA ou cibersegurança;", "3"),
+    ],
+)
+def test_resolve_field_answers_experience_by_technologies_found_in_the_question(
+    build_context: Callable[..., AnswerContext], kind: FieldKind, label: str, expected: str
+) -> None:
+    options = ["Yes", "No"] if kind == FieldKind.SELECT else []
+    field = build_field(kind, label, options=options)
+
+    assert resolve_field(field, build_context(experience=KEYWORD_EXPERIENCE)) == FieldDecision(
+        action=DecisionAction.FILL, value=expected, source=AnswerSource.RULE, reason=None
+    )
+
+
+@pytest.mark.parametrize(
+    ("kind", "label"),
+    [
+        (FieldKind.SELECT, "Já atuou em projetos no desenvolvimento de IA ligada a negócios?"),
+        (FieldKind.NUMBER, "Possui quantos anos de experiência em redes, infraestrutura, automação ou cibersegurança;"),
+        (FieldKind.SELECT, "Você tem experiência com Go?"),
+    ],
+)
+def test_resolve_field_without_known_technology_in_the_question_stays_pending(
+    build_context: Callable[..., AnswerContext], kind: FieldKind, label: str
+) -> None:
+    options = ["Yes", "No"] if kind == FieldKind.SELECT else []
+    field = build_field(kind, label, options=options)
+
+    assert resolve_field(field, build_context(experience=KEYWORD_EXPERIENCE)).action == DecisionAction.PENDING

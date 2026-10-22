@@ -50,3 +50,9 @@ def find_known_ids(connection: sqlite3.Connection, job_ids: list[str]) -> set[st
 
 def update_job_status(connection: sqlite3.Connection, job_id: str, status: JobStatus) -> None:
     connection.execute("UPDATE jobs SET status = ? WHERE id = ?", [status, job_id])
+
+
+def ignore_job(connection: sqlite3.Connection, job_id: str, reason: str) -> None:
+    connection.execute(
+        "UPDATE jobs SET status = ?, discard_reason = ? WHERE id = ?", [JobStatus.IGNORED, reason, job_id]
+    )

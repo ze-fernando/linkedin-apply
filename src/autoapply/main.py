@@ -2,7 +2,7 @@ from importlib.metadata import version
 
 import typer
 
-from autoapply.modules.applying.commands import apply
+from autoapply.modules.applying.commands import apply, run
 from autoapply.modules.config.commands import validate
 from autoapply.modules.jobs.commands import collect, show_jobs
 from autoapply.modules.search_mode.commands import search
@@ -22,6 +22,7 @@ app.command("coletar", help="Coleta vagas Easy Apply do LinkedIn e grava no banc
 app.command("buscar", help="Coleta, avalia e cria as pastas das melhores vagas em vagas/.")(search)
 app.command("vagas", help="Mostra as vagas guardadas no banco.")(show_jobs)
 app.command("aplicar", help="Aplica nas vagas do modo busca (vagas/).")(apply)
+app.command("rodar", help="Coleta, avalia e aplica nas vagas com score suficiente (modo normal).")(run)
 
 
 def show_version(requested: bool) -> None:

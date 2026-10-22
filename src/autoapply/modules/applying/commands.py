@@ -3,6 +3,7 @@ from datetime import date, datetime
 from pathlib import Path
 
 import typer
+from rich.status import Status
 from rich.table import Table
 
 from autoapply.modules.applying.easy_apply import apply_to_job
@@ -19,15 +20,19 @@ from autoapply.modules.applying.models import (
     RunSummary,
 )
 from autoapply.modules.applying.runner import run_applications
-from autoapply.modules.applying.selection import find_job_for_argument, select_ready_jobs
+from autoapply.modules.applying.selection import find_job_for_argument, select_normal_candidates, select_ready_jobs
 from autoapply.modules.applying.store import count_applied_on
-from autoapply.modules.config.commands import load_valid_config
+from autoapply.modules.config.commands import load_valid_config, load_valid_resumes
 from autoapply.modules.config.models import Config, ConfigError
+from autoapply.modules.jobs.commands import run_collection
 from autoapply.modules.jobs.models import Job
+from autoapply.modules.matching.evaluation import evaluate_jobs
+from autoapply.modules.matching.providers import find_available_providers
+from autoapply.modules.search_mode.commands import describe_evaluation, describe_providers
 from autoapply.modules.session.commands import logged_in_browser
 from autoapply.shared.console import console
 from autoapply.shared.database import open_database
-from autoapply.shared.pacing import pause_between_actions, pause_between_applications
+from autoapply.shared.pacing import pause_between_applications, pause_between_steps
 from autoapply.shared.paths import CONFIG_FILE, DATABASE_FILE, DEBUG_DIR, VAGAS_DIR
 
 USAGE_EXIT_CODE = 2
@@ -37,8 +42,11 @@ OUTCOME_LABELS = {
     ApplicationOutcome.PENDING: "[yellow]? Pendente[/]",
     ApplicationOutcome.FAILED: "[red]✖ Falhou[/]",
     ApplicationOutcome.SIMULATED: "[blue]◌ Simulada[/]",
+    ApplicationOutcome.DECLINED: "[dim]✖ Recusada por você[/]",
 }
 SKIPPED_LABEL = "[dim]⏭ Pulada[/]"
+IGNORED_LABEL = "[dim]· Ignorada[/]"
+CONFIRM_ANSWERS = {"s", "sim", "y", "yes"}
 
 
 def describe_job(job: Job, score: int | None) -> str:
@@ -60,8 +68,8 @@ def format_entry_line(entry: RunEntry) -> str:
         describe_job(candidate.job, candidate.score),
         str(candidate.resume_file),
     ]
-    detail = describe_result(entry.result)
-    return " · ".join(parts + [detail] if detail else parts)
+    details = [describe_result(entry.result), candidate.warning or ""]
+    return " · ".join(parts + [detail for detail in details if detail])
 
 
 def format_skipped_line(folder_job: FolderJob, problem: str) -> str:
@@ -160,9 +168,79 @@ def show_run_summary(summary: RunSummary) -> None:
             console.print(f"  • {question}")
 
 
+def ask_submit_confirmation(job: Job, answers: list[tuple[str, str]], status: Status) -> bool:
+    status.stop()
+    console.print(f"[bold]Pronta para enviar:[/] {job.company} · {job.title} · {job.url}")
+    for label, value in answers:
+        console.print(f"  • {label}: {value}")
+    confirmed = console.input("Enviar? [s/N] ").strip().casefold() in CONFIRM_ANSWERS
+    status.start()
+    return confirmed
+
+
+def describe_run_mode(simulate: bool, auto: bool) -> str:
+    if simulate:
+        return "[blue]Modo simulação: nada é enviado nem gravado no banco.[/]"
+    if auto:
+        return "[magenta]Modo automático: as candidaturas são enviadas sem confirmação.[/]"
+    return "Cada envio pede confirmação no terminal (use --auto para enviar sem perguntar)."
+
+
+def execute_run(
+    connection: sqlite3.Connection,
+    config: Config,
+    candidates: list[ApplicationCandidate],
+    mode: ApplyMode,
+    simulate: bool,
+    auto: bool,
+    visible: bool,
+) -> RunSummary:
+    console.print(describe_run_mode(simulate, auto))
+    with logged_in_browser(visible) as context, console.status("Aplicando...") as status:
+        page = context.pages[0]
+
+        def confirm_submit(job: Job, answers: list[tuple[str, str]]) -> bool:
+            return auto or ask_submit_confirmation(job, answers, status)
+
+        def apply_candidate(candidate: ApplicationCandidate) -> ApplicationResult:
+            answer_context = AnswerContext(
+                config=config, job_answers=candidate.job_answers, job_title=candidate.job.title
+            )
+            return apply_to_job(
+                page,
+                candidate.job,
+                candidate.resume_file,
+                answer_context,
+                simulate,
+                confirm_submit,
+                pause_between_steps,
+                DEBUG_DIR,
+            )
+
+        entries = []
+
+        def show(entry: RunEntry) -> None:
+            entries.append(entry)
+            console.print(format_entry_line(entry))
+            status.update(describe_counters(entries, connection, config, simulate))
+
+        return run_applications(
+            connection,
+            config,
+            candidates,
+            mode,
+            simulate,
+            apply_candidate,
+            pause_between_applications,
+            datetime.now,
+            show,
+        )
+
+
 def apply(
     argument: str | None = typer.Argument(None, metavar="VAGA", help="ID da vaga ou nome da pasta em vagas/."),
     ready: bool = typer.Option(False, "--prontas", help="Aplica nas vagas com currículo na pasta."),
+    auto: bool = typer.Option(False, "--auto", help="Envia sem pedir confirmação."),
     simulate: bool = typer.Option(False, "--simular", help="Percorre o formulário sem enviar."),
     visible: bool = typer.Option(False, "--visivel", help="Abre o navegador visível."),
     config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
@@ -176,41 +254,43 @@ def apply(
         if not candidates:
             console.print("Nenhuma vaga pronta para aplicar.")
             return
-        if simulate:
-            console.print("[blue]Modo simulação: nada é enviado nem gravado no banco.[/]")
-        with logged_in_browser(visible) as context, console.status("Aplicando...") as status:
-            page = context.pages[0]
+        summary = execute_run(connection, config, candidates, ApplyMode.SEARCH, simulate, auto, visible)
+    show_run_summary(summary)
 
-            def apply_candidate(candidate: ApplicationCandidate) -> ApplicationResult:
-                answer_context = AnswerContext(
-                    config=config, job_answers=candidate.job_answers, job_title=candidate.job.title
-                )
-                return apply_to_job(
-                    page,
-                    candidate.job,
-                    candidate.resume_file,
-                    answer_context,
-                    simulate,
-                    pause_between_actions,
-                    DEBUG_DIR,
-                )
 
-            entries = []
+def collect_and_evaluate(connection: sqlite3.Connection, config: Config, visible: bool) -> None:
+    resumes = load_valid_resumes(config)
+    providers = find_available_providers(config.llm)
+    run_collection(config, visible, connection)
+    console.print(describe_providers(providers))
+    with console.status("Avaliando vagas..."):
+        evaluation = evaluate_jobs(connection, config, resumes, providers)
+    console.print(describe_evaluation(evaluation))
 
-            def show(entry: RunEntry) -> None:
-                entries.append(entry)
-                console.print(format_entry_line(entry))
-                status.update(describe_counters(entries, connection, config, simulate))
 
-            summary = run_applications(
-                connection,
-                config,
-                candidates,
-                ApplyMode.SEARCH,
-                simulate,
-                apply_candidate,
-                pause_between_applications,
-                datetime.now,
-                show,
-            )
+def run(
+    auto: bool = typer.Option(False, "--auto", help="Envia sem pedir confirmação."),
+    skip_collection: bool = typer.Option(
+        False, "--sem-coleta", help="Pula a coleta e a avaliação e aplica nas vagas já avaliadas."
+    ),
+    simulate: bool = typer.Option(False, "--simular", help="Percorre o formulário sem enviar."),
+    visible: bool = typer.Option(False, "--visivel", help="Abre o navegador visível."),
+    config_path: Path = typer.Option(CONFIG_FILE, "--config", help="Caminho do config.md."),
+) -> None:
+    config = load_valid_config(config_path)
+    with open_database(DATABASE_FILE) as connection:
+        migrate_job_folders(connection, VAGAS_DIR)
+        if skip_collection:
+            console.print("Sem coleta: aplicando nas vagas já avaliadas no banco.")
+        else:
+            collect_and_evaluate(connection, config, visible)
+        selection = select_normal_candidates(connection, config)
+        for job, reason in selection.ignored:
+            console.print(f"{IGNORED_LABEL} · {job.company} · {job.title} · {reason}")
+        if config.regras.ajuste_cv_ia:
+            console.print("[yellow]⚠ O ajuste do currículo por IA só chega no M4; usando os currículos base.[/]")
+        if not selection.candidates:
+            console.print("Nenhuma vaga com score suficiente para aplicar.")
+            return
+        summary = execute_run(connection, config, selection.candidates, ApplyMode.NORMAL, simulate, auto, visible)
     show_run_summary(summary)

@@ -119,6 +119,7 @@ class ApplicationOutcome(StrEnum):
     PENDING = "pendente"
     FAILED = "falhou"
     SIMULATED = "simulada"
+    DECLINED = "recusada"
 
 
 @dataclass(frozen=True)
@@ -140,6 +141,7 @@ class ApplicationCandidate:
     resume_file: Path
     job_answers: dict[str, str]
     score: int | None
+    warning: str | None = None
 
 
 @dataclass(frozen=True)
@@ -160,3 +162,9 @@ class FolderJob:
     job: Job
     folder: Path
     score: int | None
+
+
+@dataclass(frozen=True)
+class NormalSelection:
+    candidates: list[ApplicationCandidate]
+    ignored: list[tuple[Job, str]]

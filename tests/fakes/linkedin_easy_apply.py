@@ -1,5 +1,8 @@
 from dataclasses import dataclass, field
 from html import escape
+from pathlib import Path
+
+PAGES_DIR = Path(__file__).parent.parent / "fixtures" / "pages"
 
 APPLY_PAGE_SCRIPT = """
 window.__log = {submitted: false, discarded: false, uploaded: null, followAtSubmit: null, values: {}, opened: false};
@@ -64,7 +67,7 @@ document.addEventListener("click", (event) => {
     window.__log.followAtSubmit = follow ? follow.checked : null;
     if (showSuccess) {
       setTimeout(() => {
-        root.innerHTML = `<div role="dialog" class="artdeco-modal"><h2>Sua candidatura foi enviada para Empresa Teste!</h2></div>`;
+        root.innerHTML = document.getElementById("success").innerHTML;
       }, 50);
     }
     return;
@@ -177,6 +180,7 @@ class FakeApplication:
     easy_apply: bool = True
     shows_success: bool = True
     already_applied: bool = False
+    success_page: str = "easy_apply_success.html"
 
 
 def render_step(step: FakeStep) -> str:
@@ -184,8 +188,7 @@ def render_step(step: FakeStep) -> str:
       <footer role="presentation">{step.button}</footer></template>"""
 
 
-APPLIED_FEEDBACK = """<div class="jobs-s-apply"><div class="artdeco-inline-feedback artdeco-inline-feedback--success">
-  <span class="artdeco-inline-feedback__message">Candidatura enviada há 2 dias</span></div></div>"""
+APPLIED_FEEDBACK = (PAGES_DIR / "job_already_applied.html").read_text(encoding="utf-8")
 
 
 def build_apply_control(application: FakeApplication) -> str:
@@ -204,5 +207,6 @@ def build_apply_page(application: FakeApplication) -> str:
       {build_apply_control(application)}
       <div id="modal-root"></div>
       {"".join(render_step(step) for step in application.steps)}
+      <template id="success">{(PAGES_DIR / application.success_page).read_text(encoding="utf-8")}</template>
       <script>{APPLY_PAGE_SCRIPT}</script>
     </body></html>"""

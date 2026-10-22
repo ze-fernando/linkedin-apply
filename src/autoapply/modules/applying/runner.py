@@ -90,7 +90,7 @@ def run_applications(
                 wait()
             attempted = True
             result = apply(candidate)
-            if not simulate:
+            if not simulate and result.outcome in RECORDED_OUTCOMES:
                 record_result(connection, candidate, mode, result, clock())
             entry = RunEntry(candidate, result)
         entries.append(entry)
