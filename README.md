@@ -21,6 +21,12 @@ O Chromium fica em `.playwright/` dentro do projeto. O `autoapply` usa essa past
 
 ## Configuração
 
+Comece copiando o modelo, que tem todas as seções com dados fictícios, e troque pelos seus dados:
+
+```bash
+cp config.example.md config.md
+```
+
 Estes arquivos ficam só na sua máquina (estão no `.gitignore`):
 
 | Caminho | Conteúdo |
